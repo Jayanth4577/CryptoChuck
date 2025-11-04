@@ -1,0 +1,124 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "IHenNFT",
+  "sourceName": "contracts/HenRacing.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "tokenId",
+          "type": "uint256"
+        }
+      ],
+      "name": "getHenTraits",
+      "outputs": [
+        {
+          "components": [
+            {
+              "internalType": "uint8",
+              "name": "strength",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "speed",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "stamina",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "intelligence",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "luck",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint8",
+              "name": "generation",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint256",
+              "name": "birthTime",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "lastBreedTime",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "wins",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "losses",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "racesWon",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bool",
+              "name": "isAlive",
+              "type": "bool"
+            }
+          ],
+          "internalType": "struct IHenNFT.HenTraits",
+          "name": "",
+          "type": "tuple"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "tokenId",
+          "type": "uint256"
+        }
+      ],
+      "name": "ownerOf",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "tokenId",
+          "type": "uint256"
+        }
+      ],
+      "name": "updateRaceStats",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}
