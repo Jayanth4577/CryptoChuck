@@ -22,6 +22,15 @@ interface IHenNFT {
     
     function getHenTraits(uint256 tokenId) external view returns (HenTraits memory);
     function ownerOf(uint256 tokenId) external view returns (address);
+    function mintOffspring(
+        address to,
+        uint8 strength,
+        uint8 speed,
+        uint8 stamina,
+        uint8 intelligence,
+        uint8 luck,
+        uint8 generation
+    ) external returns (uint256);
 }
 
 contract HenBreeding is Ownable, ReentrancyGuard {
@@ -87,17 +96,28 @@ contract HenBreeding is Ownable, ReentrancyGuard {
         breedCount[parent2Id]++;
         
         // Generate offspring traits (simplified - use Chainlink VRF in production)
-        uint256 offspringId = _generateOffspringId(parent1Id, parent2Id);
-        IHenNFT.HenTraits memory offspringTraits = _inheritTraits(parent1, parent2, offspringId);
-        
-        // Record offspring relationship
-        offspring[parent1Id].push(offspringId);
-        offspring[parent2Id].push(offspringId);
-        
-        emit BreedingInitiated(parent1Id, parent2Id, offspringId, msg.sender);
-        emit OffspringBorn(offspringId, offspringTraits);
-        
-        return offspringId;
+        uint256 seed = _generateOffspringId(parent1Id, parent2Id);
+        IHenNFT.HenTraits memory offspringTraits = _inheritTraits(parent1, parent2, seed);
+
+        // Mint offspring via HenNFT contract (breeding contract must be authorized in HenNFT)
+        uint256 newTokenId = henNFT.mintOffspring(
+            msg.sender,
+            offspringTraits.strength,
+            offspringTraits.speed,
+            offspringTraits.stamina,
+            offspringTraits.intelligence,
+            offspringTraits.luck,
+            offspringTraits.generation
+        );
+
+        // Record offspring relationship (store the actual tokenId)
+        offspring[parent1Id].push(newTokenId);
+        offspring[parent2Id].push(newTokenId);
+
+        emit BreedingInitiated(parent1Id, parent2Id, newTokenId, msg.sender);
+        emit OffspringBorn(newTokenId, offspringTraits);
+
+        return newTokenId;
     }
     
     // Calculate offspring traits based on parents

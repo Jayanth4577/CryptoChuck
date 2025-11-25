@@ -55,6 +55,24 @@ async function main() {
   console.log("BettingSystem deployed to:", bettingSystemAddress);
   console.log();
 
+  // Wire HenNFT with other contract addresses for access control
+  try {
+    console.log("Setting authorized contracts in HenNFT...");
+    const tx1 = await henNFT.setBreedingContract(henBreedingAddress);
+    await tx1.wait();
+    console.log("Breeding contract set on HenNFT:", henBreedingAddress);
+
+    const tx2 = await henNFT.setBattleContract(henBattleAddress);
+    await tx2.wait();
+    console.log("Battle contract set on HenNFT:", henBattleAddress);
+
+    const tx3 = await henNFT.setRacingContract(henRacingAddress);
+    await tx3.wait();
+    console.log("Racing contract set on HenNFT:", henRacingAddress);
+  } catch (err) {
+    console.log("Failed to set authorized contracts on HenNFT:", err.message || err);
+  }
+
   // Save deployment addresses
   const deploymentInfo = {
     network: hre.network.name,
@@ -90,6 +108,36 @@ async function main() {
   console.log("HenRacing:", henRacingAddress);
   console.log("BettingSystem:", bettingSystemAddress);
   console.log("\nDeployment info saved to:", deploymentPath);
+
+  // Write frontend .env.local with deployed addresses (optional convenience)
+  try {
+    const frontendEnv = `VITE_HEN_NFT_ADDRESS=${henNFTAddress}\nVITE_HEN_BREEDING_ADDRESS=${henBreedingAddress}\nVITE_HEN_BATTLE_ADDRESS=${henBattleAddress}\nVITE_HEN_RACING_ADDRESS=${henRacingAddress}\nVITE_BETTING_SYSTEM_ADDRESS=${bettingSystemAddress}\n`;
+    const frontendEnvPath = path.join(__dirname, "../frontend/.env.local");
+    fs.writeFileSync(frontendEnvPath, frontendEnv);
+    console.log("Wrote frontend .env.local with contract addresses to:", frontendEnvPath);
+  } catch (err) {
+    console.log("Failed to write frontend .env.local:", err.message || err);
+  }
+  // Copy ABIs to frontend/src/abis
+  try {
+    const abisDir = path.join(__dirname, '../frontend/src/abis');
+    if (!fs.existsSync(abisDir)) fs.mkdirSync(abisDir, { recursive: true });
+
+    const copyArtifact = (contractName) => {
+      const artifactPath = path.join(__dirname, `../artifacts/contracts/${contractName}.sol/${contractName}.json`);
+      const destPath = path.join(abisDir, `${contractName}.json`);
+      if (fs.existsSync(artifactPath)) {
+        fs.copyFileSync(artifactPath, destPath);
+        console.log(`Copied ${contractName} ABI to frontend/src/abis/`);
+      } else {
+        console.log(`ABI for ${contractName} not found at ${artifactPath}`);
+      }
+    };
+
+    ['HenNFT', 'HenBreeding', 'HenBattle', 'HenRacing', 'BettingSystem'].forEach(copyArtifact);
+  } catch (err) {
+    console.log('Failed to copy ABIs to frontend:', err.message || err);
+  }
 
   // Verify contracts on Etherscan (if not local network)
   if (hre.network.name !== "hardhat" && hre.network.name !== "localhost") {

@@ -52,38 +52,10 @@ function BattleArena({ contracts, account }) {
 
       setMyHens(owned);
 
-      // Load potential opponents (simplified - first 20 hens)
-      const opponents = [];
-      for (let i = 1; i <= 20; i++) {
-        try {
-          const owner = await contracts.henNFT.ownerOf(i);
-          if (owner.toLowerCase() !== account.toLowerCase()) {
-            const traits = await contracts.henNFT.getHenTraits(i);
-            const power = await contracts.henNFT.getHenPower(i);
-            const stats = await contracts.henBattle.getHenBattleStats(i);
-
-            opponents.push({
-              id: i.toString(),
-              owner: owner,
-              traits: {
-                strength: Number(traits.strength),
-                speed: Number(traits.speed),
-                stamina: Number(traits.stamina),
-                intelligence: Number(traits.intelligence),
-                luck: Number(traits.luck),
-              },
-              power: Number(power),
-              wins: Number(stats.wins),
-              losses: Number(stats.losses),
-              winRate: Number(stats.winRate),
-              cooldownRemaining: Number(stats.cooldownRemaining),
-            });
-          }
-        } catch (error) {
-          continue;
-        }
-      }
-
+      // For development: use your own other hens as opponents
+      // In production, this would load hens from different players
+      const opponents = owned.filter(hen => hen.id !== (selectedHen?.id || ''));
+      
       setAllHens(opponents);
     } catch (error) {
       console.error('Error loading hens:', error);
@@ -344,7 +316,7 @@ function BattleArena({ contracts, account }) {
               <div className="selection-section">
                 <h3>🎯 Select Opponent</h3>
                 <div className="hens-grid">
-                  {allHens.map(hen => renderHenCard(hen, false, setOpponent))}
+                  {myHens.filter(hen => hen.id !== selectedHen.id).map(hen => renderHenCard(hen, false, setOpponent))}
                 </div>
               </div>
             )}

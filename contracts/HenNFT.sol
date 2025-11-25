@@ -29,6 +29,10 @@ contract HenNFT is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
 
     // Mapping from token ID to traits
     mapping(uint256 => HenTraits) public henTraits;
+    // Authorized contracts
+    address public breedingContract;
+    address public battleContract;
+    address public racingContract;
     
     // Marketplace
     struct Listing {
@@ -142,7 +146,7 @@ contract HenNFT is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
 
     // Update battle stats (only callable by battle contract)
     function updateBattleStats(uint256 tokenId, bool won) external {
-        // In production, add access control for battle contract
+        require(msg.sender == battleContract || msg.sender == owner(), "Not authorized");
         if (won) {
             henTraits[tokenId].wins++;
         } else {
@@ -153,8 +157,60 @@ contract HenNFT is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
 
     // Update race stats
     function updateRaceStats(uint256 tokenId) external {
-        // In production, add access control for race contract
+        require(msg.sender == racingContract || msg.sender == owner(), "Not authorized");
         henTraits[tokenId].racesWon++;
+    }
+
+    // Set authorized contract addresses
+    function setBreedingContract(address _addr) external onlyOwner {
+        breedingContract = _addr;
+    }
+
+    function setBattleContract(address _addr) external onlyOwner {
+        battleContract = _addr;
+    }
+
+    function setRacingContract(address _addr) external onlyOwner {
+        racingContract = _addr;
+    }
+
+    // Mint an offspring with precomputed traits - callable only by breeding contract
+    function mintOffspring(
+        address to,
+        uint8 strength,
+        uint8 speed,
+        uint8 stamina,
+        uint8 intelligence,
+        uint8 luck,
+        uint8 generation
+    ) external nonReentrant returns (uint256) {
+        require(msg.sender == breedingContract, "Only breeding contract can mint offspring");
+        require(_tokenIds.current() < MAX_SUPPLY, "Max supply reached");
+
+        _tokenIds.increment();
+        uint256 newTokenId = _tokenIds.current();
+
+        _safeMint(to, newTokenId);
+
+        HenTraits memory traits = HenTraits({
+            strength: strength,
+            speed: speed,
+            stamina: stamina,
+            intelligence: intelligence,
+            luck: luck,
+            generation: generation,
+            birthTime: block.timestamp,
+            lastBreedTime: 0,
+            wins: 0,
+            losses: 0,
+            racesWon: 0,
+            isAlive: true
+        });
+
+        henTraits[newTokenId] = traits;
+
+        emit HenMinted(newTokenId, to, traits);
+        return newTokenId;
     }
 
     // Get hen traits
