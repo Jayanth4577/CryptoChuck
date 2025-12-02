@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import './App.css';
+import LandingPage from './components/LandingPage';
 import Marketplace from './components/Marketplace';
 import Breeding from './components/Breeding';
 import BattleArena from './components/BattleArena';
@@ -31,6 +32,7 @@ function App() {
   const [selectedTab, setSelectedTab] = useState('home');
   const [loading, setLoading] = useState(false);
   const [wrongNetwork, setWrongNetwork] = useState(false);
+  const [showLanding, setShowLanding] = useState(true);
 
   // Initialize Web3
   useEffect(() => {
@@ -61,7 +63,6 @@ function App() {
       console.log('No existing connection found');
     }
   };
-
   const initWeb3 = async () => {
     if (typeof window.ethereum === 'undefined') {
       alert('Please install MetaMask!');
@@ -69,6 +70,8 @@ function App() {
     }
 
     try {
+      setShowLanding(false); // Hide landing page when connecting
+      
       // Handle Brave Wallet and other provider conflicts
       let ethereum = window.ethereum;
       
@@ -122,14 +125,14 @@ function App() {
 
         setContracts({ henNFT, henBreeding, henBattle, henRacing, bettingSystem });
 
-        // Listen for account changes
-        window.ethereum.on('accountsChanged', (accounts) => {
-          setAccount(accounts[0]);
-        });
-      } catch (error) {
-        console.error('Error connecting to Web3:', error);
-        alert(error.message);
-      }
+      // Listen for account changes
+      window.ethereum.on('accountsChanged', (accounts) => {
+        setAccount(accounts[0]);
+      });
+    } catch (error) {
+      console.error('Error connecting to Web3:', error);
+      alert(error.message);
+    }
   };
 
   const loadMyHens = async () => {
@@ -333,6 +336,10 @@ function App() {
       </div>
     );
   };
+  // Show landing page if not connected
+  if (!account && showLanding) {
+    return <LandingPage onConnect={initWeb3} />;
+  }
 
   return (
     <div className="app">
