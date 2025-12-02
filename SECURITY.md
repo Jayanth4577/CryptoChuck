@@ -251,3 +251,32 @@ await henBattle.pause();
 ---
 
 **Remember**: Security is an ongoing process, not a one-time setup. Stay vigilant! 🛡️
+
+## 🚀 **Future Improvements to Reach 100/100 Score**
+
+### **Current Score: 90/100**
+
+### **1. Chainlink VRF Integration (+5 points)**
+Replace pseudo-random with verifiable randomness:
+```bash
+npm install @chainlink/contracts
+```
+**Benefits:** Provably fair, manipulation-proof, industry standard
+
+### **2. IPFS Metadata Storage (+3 points)**
+Decentralized storage for hen images/metadata:
+```bash
+npm install ipfs-http-client @pinata/sdk
+```
+**Benefits:** True decentralization, OpenSea compatible, custom SVG avatars
+
+### **3. The Graph Subgraph (+2 points)**
+Efficient off-chain indexing for leaderboards:
+```bash
+npm install -g @graphprotocol/graph-cli
+```
+**Benefits:** Free queries, instant results, real-time subscriptions
+
+**Estimated time to 100/100:** ~11 hours total
+
+---
