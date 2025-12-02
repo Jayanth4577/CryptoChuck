@@ -12,12 +12,14 @@ interface IHenNFT {
         uint8 intelligence;
         uint8 luck;
         uint8 generation;
-        uint256 birthTime;
-        uint256 lastBreedTime;
-        uint256 wins;
-        uint256 losses;
-        uint256 racesWon;
+        uint48 birthTime;
+        uint48 lastBreedTime;
+        uint32 wins;
+        uint32 losses;
+        uint32 racesWon;
+        uint32 xp;
         bool isAlive;
+        uint8 trainingLevel;
     }
     
     function getHenTraits(uint256 tokenId) external view returns (HenTraits memory);
@@ -31,6 +33,7 @@ interface IHenNFT {
         uint8 luck,
         uint8 generation
     ) external returns (uint256);
+    function addXP(uint256 tokenId, uint256 xpAmount) external;
 }
 
 contract HenBreeding is Ownable, ReentrancyGuard {
@@ -110,6 +113,10 @@ contract HenBreeding is Ownable, ReentrancyGuard {
             offspringTraits.generation
         );
 
+        // Award XP to both parents for breeding
+        henNFT.addXP(parent1Id, 25); // XP_PER_BREED
+        henNFT.addXP(parent2Id, 25); // XP_PER_BREED
+
         // Record offspring relationship (store the actual tokenId)
         offspring[parent1Id].push(newTokenId);
         offspring[parent2Id].push(newTokenId);
@@ -136,12 +143,14 @@ contract HenBreeding is Ownable, ReentrancyGuard {
             intelligence: _inheritAttribute(parent1.intelligence, parent2.intelligence, seed, "intelligence"),
             luck: _inheritAttribute(parent1.luck, parent2.luck, seed, "luck"),
             generation: generation,
-            birthTime: block.timestamp,
+            birthTime: uint48(block.timestamp),
             lastBreedTime: 0,
             wins: 0,
             losses: 0,
             racesWon: 0,
-            isAlive: true
+            xp: 0,
+            isAlive: true,
+            trainingLevel: 0
         });
     }
     

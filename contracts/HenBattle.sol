@@ -13,17 +13,20 @@ interface IHenNFT {
         uint8 intelligence;
         uint8 luck;
         uint8 generation;
-        uint256 birthTime;
-        uint256 lastBreedTime;
-        uint256 wins;
-        uint256 losses;
-        uint256 racesWon;
+        uint48 birthTime;
+        uint48 lastBreedTime;
+        uint32 wins;
+        uint32 losses;
+        uint32 racesWon;
+        uint32 xp;
         bool isAlive;
+        uint8 trainingLevel;
     }
     
     function getHenTraits(uint256 tokenId) external view returns (HenTraits memory);
     function ownerOf(uint256 tokenId) external view returns (address);
     function updateBattleStats(uint256 tokenId, bool won) external;
+    function addXP(uint256 tokenId, uint256 xpAmount) external;
 }
 
 contract HenBattle is Ownable, ReentrancyGuard {
@@ -213,6 +216,10 @@ contract HenBattle is Ownable, ReentrancyGuard {
         henNFT.updateBattleStats(winnerId, true);
         henNFT.updateBattleStats(loserId, false);
         
+        // Award XP
+        henNFT.addXP(winnerId, 150); // XP_PER_BATTLE (50) + XP_PER_BATTLE_WIN (100)
+        henNFT.addXP(loserId, 50);   // XP_PER_BATTLE only
+        
         emit BattleComplete(battleId, winnerId, loserId, winner, BATTLE_REWARD);
     }
     
@@ -244,13 +251,21 @@ contract HenBattle is Ownable, ReentrancyGuard {
         IHenNFT.HenTraits memory defender,
         uint256 round
     ) private view returns (uint256) {
-        // Base damage from strength
+        // IMPROVED: 75% skill-based, 25% luck-based damage calculation
+        
+        // Base damage from strength (primary factor - 50%)
         uint256 baseDamage = uint256(attacker.strength);
         
-        // Intelligence affects strategy (bonus damage)
-        uint256 intelligenceBonus = (uint256(attacker.intelligence) * baseDamage) / 200;
+        // Intelligence affects strategy (25% skill factor)
+        uint256 intelligenceBonus = (uint256(attacker.intelligence) * baseDamage) / 150;
         
-        // Luck affects critical hits
+        // Training level bonus (up to +20% damage at max training)
+        uint256 trainingBonus = (baseDamage * uint256(attacker.trainingLevel) * 2) / 100;
+        
+        // Total skill-based damage (75% of total)
+        uint256 skillDamage = baseDamage + intelligenceBonus + trainingBonus;
+        
+        // Luck affects critical hits (reduced to 25% impact)
         uint256 luckRoll = uint256(keccak256(abi.encodePacked(
             block.timestamp,
             round,
@@ -258,15 +273,17 @@ contract HenBattle is Ownable, ReentrancyGuard {
             block.prevrandao
         ))) % 100;
         
+        // Critical hit: reduced chance and bonus (was 50% chance, now 30% chance)
         uint256 criticalMultiplier = 100;
-        if (luckRoll < attacker.luck / 2) {
-            criticalMultiplier = 150; // 1.5x damage on crit
+        if (luckRoll < (attacker.luck * 30) / 100) {
+            criticalMultiplier = 125; // 1.25x damage on crit (was 1.5x)
         }
         
-        // Defense reduction from defender's stamina
+        // Defense reduction from defender's stamina (unchanged)
         uint256 defense = uint256(defender.stamina) / 10;
         
-        uint256 totalDamage = (baseDamage + intelligenceBonus) * criticalMultiplier / 100;
+        // Final damage calculation
+        uint256 totalDamage = (skillDamage * criticalMultiplier) / 100;
         totalDamage = totalDamage > defense ? totalDamage - defense : 1;
         
         return totalDamage;

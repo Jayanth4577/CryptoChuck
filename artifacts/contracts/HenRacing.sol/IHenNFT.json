@@ -9,6 +9,24 @@
           "internalType": "uint256",
           "name": "tokenId",
           "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "xpAmount",
+          "type": "uint256"
+        }
+      ],
+      "name": "addXP",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "tokenId",
+          "type": "uint256"
         }
       ],
       "name": "getHenTraits",
@@ -46,34 +64,44 @@
               "type": "uint8"
             },
             {
-              "internalType": "uint256",
+              "internalType": "uint48",
               "name": "birthTime",
-              "type": "uint256"
+              "type": "uint48"
             },
             {
-              "internalType": "uint256",
+              "internalType": "uint48",
               "name": "lastBreedTime",
-              "type": "uint256"
+              "type": "uint48"
             },
             {
-              "internalType": "uint256",
+              "internalType": "uint32",
               "name": "wins",
-              "type": "uint256"
+              "type": "uint32"
             },
             {
-              "internalType": "uint256",
+              "internalType": "uint32",
               "name": "losses",
-              "type": "uint256"
+              "type": "uint32"
             },
             {
-              "internalType": "uint256",
+              "internalType": "uint32",
               "name": "racesWon",
-              "type": "uint256"
+              "type": "uint32"
+            },
+            {
+              "internalType": "uint32",
+              "name": "xp",
+              "type": "uint32"
             },
             {
               "internalType": "bool",
               "name": "isAlive",
               "type": "bool"
+            },
+            {
+              "internalType": "uint8",
+              "name": "trainingLevel",
+              "type": "uint8"
             }
           ],
           "internalType": "struct IHenNFT.HenTraits",

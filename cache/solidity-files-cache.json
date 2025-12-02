@@ -8,11 +8,12 @@
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
-          "evmVersion": "paris",
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
+          "viaIR": true,
+          "evmVersion": "paris",
           "outputSelection": {
             "*": {
               "*": [
@@ -43,17 +44,18 @@
       ]
     },
     "C:\\Users\\jayan\\OneDrive\\Documents\\BTA\\CryptoChuck\\node_modules\\@openzeppelin\\contracts\\security\\ReentrancyGuard.sol": {
-      "lastModificationDate": 1762284684376,
+      "lastModificationDate": 1764101494375,
       "contentHash": "1535f8c0c68463f8c1b5239f7584e71f",
       "sourceName": "@openzeppelin/contracts/security/ReentrancyGuard.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
-          "evmVersion": "paris",
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
+          "viaIR": true,
+          "evmVersion": "paris",
           "outputSelection": {
             "*": {
               "*": [
@@ -79,17 +81,18 @@
       ]
     },
     "C:\\Users\\jayan\\OneDrive\\Documents\\BTA\\CryptoChuck\\node_modules\\@openzeppelin\\contracts\\access\\Ownable.sol": {
-      "lastModificationDate": 1762284684351,
+      "lastModificationDate": 1764101494338,
       "contentHash": "5a20b2cad87ddb61c7a3a6af21289e28",
       "sourceName": "@openzeppelin/contracts/access/Ownable.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
-          "evmVersion": "paris",
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
+          "viaIR": true,
+          "evmVersion": "paris",
           "outputSelection": {
             "*": {
               "*": [
@@ -117,17 +120,18 @@
       ]
     },
     "C:\\Users\\jayan\\OneDrive\\Documents\\BTA\\CryptoChuck\\node_modules\\@openzeppelin\\contracts\\utils\\Context.sol": {
-      "lastModificationDate": 1762284682992,
+      "lastModificationDate": 1764101493337,
       "contentHash": "f07feb4a44b1a4872370da5aa70e8e46",
       "sourceName": "@openzeppelin/contracts/utils/Context.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
-          "evmVersion": "paris",
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
+          "viaIR": true,
+          "evmVersion": "paris",
           "outputSelection": {
             "*": {
               "*": [
@@ -153,17 +157,18 @@
       ]
     },
     "C:\\Users\\jayan\\OneDrive\\Documents\\BTA\\CryptoChuck\\node_modules\\@openzeppelin\\contracts\\token\\ERC721\\ERC721.sol": {
-      "lastModificationDate": 1762284683711,
+      "lastModificationDate": 1764101493728,
       "contentHash": "95602b04f0b53f1139f4668d123ddeb7",
       "sourceName": "@openzeppelin/contracts/token/ERC721/ERC721.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
-          "evmVersion": "paris",
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
+          "viaIR": true,
+          "evmVersion": "paris",
           "outputSelection": {
             "*": {
               "*": [
@@ -197,17 +202,18 @@
       ]
     },
     "C:\\Users\\jayan\\OneDrive\\Documents\\BTA\\CryptoChuck\\node_modules\\@openzeppelin\\contracts\\utils\\Address.sol": {
-      "lastModificationDate": 1762284682873,
+      "lastModificationDate": 1764101493262,
       "contentHash": "211ffd288c1588ba8c10eae668ca3c66",
       "sourceName": "@openzeppelin/contracts/utils/Address.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
-          "evmVersion": "paris",
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
+          "viaIR": true,
+          "evmVersion": "paris",
           "outputSelection": {
             "*": {
               "*": [
@@ -233,17 +239,18 @@
       ]
     },
     "C:\\Users\\jayan\\OneDrive\\Documents\\BTA\\CryptoChuck\\node_modules\\@openzeppelin\\contracts\\utils\\Strings.sol": {
-      "lastModificationDate": 1762284684414,
+      "lastModificationDate": 1764101494408,
       "contentHash": "48686fc32a22a3754b8e63321857dd2a",
       "sourceName": "@openzeppelin/contracts/utils/Strings.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
-          "evmVersion": "paris",
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
+          "viaIR": true,
+          "evmVersion": "paris",
           "outputSelection": {
             "*": {
               "*": [
@@ -272,17 +279,18 @@
       ]
     },
     "C:\\Users\\jayan\\OneDrive\\Documents\\BTA\\CryptoChuck\\node_modules\\@openzeppelin\\contracts\\token\\ERC721\\IERC721.sol": {
-      "lastModificationDate": 1762284684198,
+      "lastModificationDate": 1764101494210,
       "contentHash": "48de4c9a3a4ae5ef66a2aa620843413f",
       "sourceName": "@openzeppelin/contracts/token/ERC721/IERC721.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
-          "evmVersion": "paris",
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
+          "viaIR": true,
+          "evmVersion": "paris",
           "outputSelection": {
             "*": {
               "*": [
@@ -310,17 +318,18 @@
       ]
     },
     "C:\\Users\\jayan\\OneDrive\\Documents\\BTA\\CryptoChuck\\node_modules\\@openzeppelin\\contracts\\token\\ERC721\\IERC721Receiver.sol": {
-      "lastModificationDate": 1762284684227,
+      "lastModificationDate": 1764101494228,
       "contentHash": "c22d4395e33763de693fd440c6fd10e1",
       "sourceName": "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
-          "evmVersion": "paris",
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
+          "viaIR": true,
+          "evmVersion": "paris",
           "outputSelection": {
             "*": {
               "*": [
@@ -346,17 +355,18 @@
       ]
     },
     "C:\\Users\\jayan\\OneDrive\\Documents\\BTA\\CryptoChuck\\node_modules\\@openzeppelin\\contracts\\utils\\introspection\\ERC165.sol": {
-      "lastModificationDate": 1762284683489,
+      "lastModificationDate": 1764101493560,
       "contentHash": "0e7db055ce108f9da7bb6686a00287c0",
       "sourceName": "@openzeppelin/contracts/utils/introspection/ERC165.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
-          "evmVersion": "paris",
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
+          "viaIR": true,
+          "evmVersion": "paris",
           "outputSelection": {
             "*": {
               "*": [
@@ -384,17 +394,18 @@
       ]
     },
     "C:\\Users\\jayan\\OneDrive\\Documents\\BTA\\CryptoChuck\\node_modules\\@openzeppelin\\contracts\\token\\ERC721\\extensions\\IERC721Metadata.sol": {
-      "lastModificationDate": 1762284684217,
+      "lastModificationDate": 1764101494223,
       "contentHash": "efbc0d15b80a74e34dbe8da0f3e879bb",
       "sourceName": "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
-          "evmVersion": "paris",
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
+          "viaIR": true,
+          "evmVersion": "paris",
           "outputSelection": {
             "*": {
               "*": [
@@ -422,17 +433,18 @@
       ]
     },
     "C:\\Users\\jayan\\OneDrive\\Documents\\BTA\\CryptoChuck\\node_modules\\@openzeppelin\\contracts\\utils\\math\\SignedMath.sol": {
-      "lastModificationDate": 1762284684404,
+      "lastModificationDate": 1764101494397,
       "contentHash": "9488ebd4daacfee8ad04811600d7d061",
       "sourceName": "@openzeppelin/contracts/utils/math/SignedMath.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
-          "evmVersion": "paris",
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
+          "viaIR": true,
+          "evmVersion": "paris",
           "outputSelection": {
             "*": {
               "*": [
@@ -458,17 +470,18 @@
       ]
     },
     "C:\\Users\\jayan\\OneDrive\\Documents\\BTA\\CryptoChuck\\node_modules\\@openzeppelin\\contracts\\utils\\math\\Math.sol": {
-      "lastModificationDate": 1762284684341,
+      "lastModificationDate": 1764101494316,
       "contentHash": "fe63409d8a06818b926cf89e0ea88b1b",
       "sourceName": "@openzeppelin/contracts/utils/math/Math.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
-          "evmVersion": "paris",
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
+          "viaIR": true,
+          "evmVersion": "paris",
           "outputSelection": {
             "*": {
               "*": [
@@ -494,17 +507,18 @@
       ]
     },
     "C:\\Users\\jayan\\OneDrive\\Documents\\BTA\\CryptoChuck\\node_modules\\@openzeppelin\\contracts\\utils\\introspection\\IERC165.sol": {
-      "lastModificationDate": 1762284684096,
+      "lastModificationDate": 1764101494073,
       "contentHash": "03e6768535ac4da0e9756f1d8a4a018a",
       "sourceName": "@openzeppelin/contracts/utils/introspection/IERC165.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
-          "evmVersion": "paris",
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
+          "viaIR": true,
+          "evmVersion": "paris",
           "outputSelection": {
             "*": {
               "*": [
@@ -530,17 +544,18 @@
       ]
     },
     "C:\\Users\\jayan\\OneDrive\\Documents\\BTA\\CryptoChuck\\node_modules\\@openzeppelin\\contracts\\token\\ERC721\\extensions\\ERC721URIStorage.sol": {
-      "lastModificationDate": 1762284683817,
+      "lastModificationDate": 1764101493800,
       "contentHash": "de368c6a87e159c86544ae5041b58cf3",
       "sourceName": "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
-          "evmVersion": "paris",
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
+          "viaIR": true,
+          "evmVersion": "paris",
           "outputSelection": {
             "*": {
               "*": [
@@ -569,17 +584,18 @@
       ]
     },
     "C:\\Users\\jayan\\OneDrive\\Documents\\BTA\\CryptoChuck\\node_modules\\@openzeppelin\\contracts\\interfaces\\IERC4906.sol": {
-      "lastModificationDate": 1762284684173,
+      "lastModificationDate": 1764101494186,
       "contentHash": "d3f355e15269d1476d86c84730cebb5e",
       "sourceName": "@openzeppelin/contracts/interfaces/IERC4906.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
-          "evmVersion": "paris",
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
+          "viaIR": true,
+          "evmVersion": "paris",
           "outputSelection": {
             "*": {
               "*": [
@@ -608,17 +624,18 @@
       ]
     },
     "C:\\Users\\jayan\\OneDrive\\Documents\\BTA\\CryptoChuck\\node_modules\\@openzeppelin\\contracts\\interfaces\\IERC721.sol": {
-      "lastModificationDate": 1762284684192,
+      "lastModificationDate": 1764101494205,
       "contentHash": "e6da7798a8c22c5043cc42d64a2a8f80",
       "sourceName": "@openzeppelin/contracts/interfaces/IERC721.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
-          "evmVersion": "paris",
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
+          "viaIR": true,
+          "evmVersion": "paris",
           "outputSelection": {
             "*": {
               "*": [
@@ -644,17 +661,18 @@
       "artifacts": []
     },
     "C:\\Users\\jayan\\OneDrive\\Documents\\BTA\\CryptoChuck\\node_modules\\@openzeppelin\\contracts\\interfaces\\IERC165.sol": {
-      "lastModificationDate": 1762284684093,
+      "lastModificationDate": 1764101494069,
       "contentHash": "ee9624272968c23d93d4c2e39f06e6e2",
       "sourceName": "@openzeppelin/contracts/interfaces/IERC165.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
-          "evmVersion": "paris",
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
+          "viaIR": true,
+          "evmVersion": "paris",
           "outputSelection": {
             "*": {
               "*": [
@@ -680,17 +698,18 @@
       "artifacts": []
     },
     "C:\\Users\\jayan\\OneDrive\\Documents\\BTA\\CryptoChuck\\contracts\\HenNFT.sol": {
-      "lastModificationDate": 1762286415310,
-      "contentHash": "f32f5ebec71c13834b551a7b6a20147f",
+      "lastModificationDate": 1764703843707,
+      "contentHash": "e2a4b6833730e1fe3c948ef6153f9e19",
       "sourceName": "contracts/HenNFT.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
-          "evmVersion": "paris",
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
+          "viaIR": true,
+          "evmVersion": "paris",
           "outputSelection": {
             "*": {
               "*": [
@@ -722,17 +741,18 @@
       ]
     },
     "C:\\Users\\jayan\\OneDrive\\Documents\\BTA\\CryptoChuck\\node_modules\\@openzeppelin\\contracts\\utils\\Counters.sol": {
-      "lastModificationDate": 1762284683003,
+      "lastModificationDate": 1764101493347,
       "contentHash": "74654e3ae5d7f39555055dfe244dab7a",
       "sourceName": "@openzeppelin/contracts/utils/Counters.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
-          "evmVersion": "paris",
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
+          "viaIR": true,
+          "evmVersion": "paris",
           "outputSelection": {
             "*": {
               "*": [
@@ -758,17 +778,18 @@
       ]
     },
     "C:\\Users\\jayan\\OneDrive\\Documents\\BTA\\CryptoChuck\\contracts\\HenRacing.sol": {
-      "lastModificationDate": 1764073754226,
-      "contentHash": "ee3dc070cd2b72502c3e2a1e21f609f9",
+      "lastModificationDate": 1764704348731,
+      "contentHash": "87f4d89488ceb224aeafe12dfd7a5a83",
       "sourceName": "contracts/HenRacing.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
-          "evmVersion": "paris",
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
+          "viaIR": true,
+          "evmVersion": "paris",
           "outputSelection": {
             "*": {
               "*": [
@@ -798,17 +819,18 @@
       ]
     },
     "C:\\Users\\jayan\\OneDrive\\Documents\\BTA\\CryptoChuck\\contracts\\HenBreeding.sol": {
-      "lastModificationDate": 1762286415406,
-      "contentHash": "965e637a9eeac1c641913a969514cfb0",
+      "lastModificationDate": 1764704403383,
+      "contentHash": "5e01f21e6ae10afde7db7fe4ada48a9d",
       "sourceName": "contracts/HenBreeding.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
-          "evmVersion": "paris",
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
+          "viaIR": true,
+          "evmVersion": "paris",
           "outputSelection": {
             "*": {
               "*": [
@@ -838,17 +860,18 @@
       ]
     },
     "C:\\Users\\jayan\\OneDrive\\Documents\\BTA\\CryptoChuck\\contracts\\HenBattle.sol": {
-      "lastModificationDate": 1762285932223,
-      "contentHash": "5c47298f4dced61e589bdab95da90369",
+      "lastModificationDate": 1764704332746,
+      "contentHash": "a7bfe8ba21a3314adb2455d54c212021",
       "sourceName": "contracts/HenBattle.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
-          "evmVersion": "paris",
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
+          "viaIR": true,
+          "evmVersion": "paris",
           "outputSelection": {
             "*": {
               "*": [
@@ -879,17 +902,18 @@
       ]
     },
     "C:\\Users\\jayan\\OneDrive\\Documents\\BTA\\CryptoChuck\\node_modules\\@openzeppelin\\contracts\\token\\ERC20\\IERC20.sol": {
-      "lastModificationDate": 1762284684118,
+      "lastModificationDate": 1764101494129,
       "contentHash": "df36f7051335cd1e748b1b6463b7fdd3",
       "sourceName": "@openzeppelin/contracts/token/ERC20/IERC20.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
-          "evmVersion": "paris",
           "optimizer": {
-            "enabled": false,
+            "enabled": true,
             "runs": 200
           },
+          "viaIR": true,
+          "evmVersion": "paris",
           "outputSelection": {
             "*": {
               "*": [

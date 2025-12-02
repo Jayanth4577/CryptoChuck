@@ -7,6 +7,11 @@ import Breeding from './components/Breeding';
 import BattleArena from './components/BattleArena';
 import RaceTrack from './components/RaceTrack';
 import BettingAnalytics from './components/BettingAnalytics';
+import TransactionModal from './components/TransactionModal';
+import TransactionHistory from './components/TransactionHistory';
+import Leaderboard from './components/Leaderboard';
+import { parseError } from './utils/errorHandler';
+import { addToHistory } from './components/TransactionHistory';
 
 // Import ABIs (you'll need to copy these from artifacts after compilation)
 import HenNFTJson from './abis/HenNFT.json';
@@ -33,6 +38,19 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [wrongNetwork, setWrongNetwork] = useState(false);
   const [showLanding, setShowLanding] = useState(true);
+  const [error, setError] = useState('');
+  const [txModal, setTxModal] = useState({
+    isOpen: false,
+    status: 'pending', // 'pending', 'confirmed', 'failed'
+    txHash: '',
+    message: ''
+  });
+  
+  // Filtering and sorting state
+  const [sortBy, setSortBy] = useState('power'); // 'power', 'generation', 'wins', 'id'
+  const [sortOrder, setSortOrder] = useState('desc'); // 'asc', 'desc'
+  const [searchId, setSearchId] = useState('');
+  const [filterGeneration, setFilterGeneration] = useState('all'); // 'all', '0', '1', '2+', etc.
 
   // Initialize Web3
   useEffect(() => {
@@ -65,12 +83,13 @@ function App() {
   };
   const initWeb3 = async () => {
     if (typeof window.ethereum === 'undefined') {
-      alert('Please install MetaMask!');
+      setError('❌ Please install MetaMask to use this app!');
       return;
     }
 
     try {
       setShowLanding(false); // Hide landing page when connecting
+      setError(''); // Clear any previous errors
       
       // Handle Brave Wallet and other provider conflicts
       let ethereum = window.ethereum;
@@ -131,7 +150,8 @@ function App() {
       });
     } catch (error) {
       console.error('Error connecting to Web3:', error);
-      alert(error.message);
+      const errorMessage = parseError(error);
+      setError(errorMessage);
     }
   };
 
@@ -157,6 +177,7 @@ function App() {
           wins: Number(traits.wins),
           losses: Number(traits.losses),
           racesWon: Number(traits.racesWon),
+          xp: Number(traits.xp || 0),
         };
         
         // Calculate total power
@@ -183,15 +204,18 @@ function App() {
   };
 
   const exportNFTMetadata = (hen) => {
+    const level = calculateLevel(hen.xp || 0);
     const metadata = {
       name: `CryptoChuck #${hen.id}`,
       description: "A unique fighting hen NFT from CryptoChuck blockchain game",
       token_id: hen.id,
       contract_address: CONTRACT_ADDRESSES.henNFT,
-      network: "Hardhat Local",
-      chain_id: 31337,
+      network: "Sepolia Testnet",
+      chain_id: 11155111,
       owner: account,
       attributes: [
+        { trait_type: "Level", value: level },
+        { trait_type: "Experience Points", value: hen.xp || 0 },
         { trait_type: "Strength", value: hen.strength, max_value: 100 },
         { trait_type: "Speed", value: hen.speed, max_value: 100 },
         { trait_type: "Stamina", value: hen.stamina, max_value: 100 },
@@ -225,28 +249,132 @@ function App() {
 
   const mintHen = async () => {
     setLoading(true);
+    setError('');
     try {
       // Get the mint price from the contract
       const mintPrice = await contracts.henNFT.MINT_PRICE();
       console.log('Mint price:', ethers.formatEther(mintPrice), 'ETH');
       
+      // Show transaction modal
+      setTxModal({
+        isOpen: true,
+        status: 'pending',
+        txHash: '',
+        message: 'Minting your CryptoChuck NFT...'
+      });
+      
       // Create the transaction with the exact value
       const tx = await contracts.henNFT.mintHen({
         value: mintPrice,
-        gasLimit: 500000 // Add explicit gas limit
+        gasLimit: 500000
       });
       
-      console.log('Transaction sent:', tx.hash);
-      const receipt = await tx.wait();
-      console.log('Transaction confirmed:', receipt.hash);
+      console.log('⏳ Transaction sent:', tx.hash);
       
-      alert('Hen minted successfully!');
+      // Update modal with transaction hash
+      setTxModal({
+        isOpen: true,
+        status: 'pending',
+        txHash: tx.hash,
+        message: 'Waiting for confirmation...'
+      });
+      
+      // Wait for confirmation
+      const receipt = await tx.wait();
+      console.log('✅ Transaction confirmed:', receipt.hash);
+      
+      // Show success
+      setTxModal({
+        isOpen: true,
+        status: 'confirmed',
+        txHash: receipt.hash,
+        message: 'Hen minted successfully! 🎉'
+      });
+      
+      // Add to transaction history
+      addToHistory(account, {
+        type: 'mint',
+        description: 'Minted a new CryptoChuck NFT',
+        txHash: receipt.hash,
+        status: 'confirmed'
+      });
+      
+      // Reload hens
       loadMyHens();
     } catch (error) {
       console.error('Error minting hen:', error);
-      // More detailed error message
-      const errorMessage = error.data?.message || error.message || 'Unknown error';
-      alert('Failed to mint hen: ' + errorMessage);
+      const errorMessage = parseError(error);
+      setError(errorMessage);
+      
+      // Show error in modal
+      setTxModal({
+        isOpen: true,
+        status: 'failed',
+        txHash: '',
+        message: errorMessage
+      });
+    }
+    setLoading(false);
+  };
+
+  const batchMintHens = async (quantity) => {
+    setLoading(true);
+    setError('');
+    try {
+      const mintPrice = await contracts.henNFT.MINT_PRICE();
+      const totalCost = mintPrice * BigInt(quantity);
+      
+      setTxModal({
+        isOpen: true,
+        status: 'pending',
+        txHash: '',
+        message: `Minting ${quantity} CryptoChuck NFTs...`
+      });
+      
+      const tx = await contracts.henNFT.batchMintHens(quantity, {
+        value: totalCost,
+        gasLimit: 500000 * quantity
+      });
+      
+      console.log('⏳ Batch mint tx sent:', tx.hash);
+      
+      setTxModal({
+        isOpen: true,
+        status: 'pending',
+        txHash: tx.hash,
+        message: `Waiting for confirmation... (${quantity} hens)`
+      });
+      
+      const receipt = await tx.wait();
+      console.log('✅ Batch mint confirmed:', receipt.hash);
+      
+      setTxModal({
+        isOpen: true,
+        status: 'confirmed',
+        txHash: receipt.hash,
+        message: `${quantity} hens minted successfully! 🎉`
+      });
+      
+      // Add to transaction history
+      addToHistory(account, {
+        type: 'mint',
+        description: `Batch minted ${quantity} CryptoChuck NFTs`,
+        txHash: receipt.hash,
+        status: 'confirmed'
+      });
+      
+      loadMyHens();
+    } catch (error) {
+      console.error('Error batch minting:', error);
+      const errorMessage = parseError(error);
+      setError(errorMessage);
+      
+      setTxModal({
+        isOpen: true,
+        status: 'failed',
+        txHash: '',
+        message: errorMessage
+      });
     }
     setLoading(false);
   };
@@ -255,7 +383,76 @@ function App() {
     return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
   };
 
+  // Filter and sort hens
+  const getFilteredAndSortedHens = () => {
+    let filtered = [...myHens];
+
+    // Filter by search ID
+    if (searchId) {
+      filtered = filtered.filter(hen => hen.id.includes(searchId));
+    }
+
+    // Filter by generation
+    if (filterGeneration !== 'all') {
+      if (filterGeneration === '2+') {
+        filtered = filtered.filter(hen => hen.generation >= 2);
+      } else {
+        const gen = parseInt(filterGeneration);
+        filtered = filtered.filter(hen => hen.generation === gen);
+      }
+    }
+
+    // Sort
+    filtered.sort((a, b) => {
+      let aVal, bVal;
+      
+      switch (sortBy) {
+        case 'power':
+          aVal = a.totalPower;
+          bVal = b.totalPower;
+          break;
+        case 'generation':
+          aVal = a.generation;
+          bVal = b.generation;
+          break;
+        case 'wins':
+          aVal = a.wins;
+          bVal = b.wins;
+          break;
+        case 'id':
+          aVal = parseInt(a.id);
+          bVal = parseInt(b.id);
+          break;
+        default:
+          aVal = a.totalPower;
+          bVal = b.totalPower;
+      }
+
+      return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
+    });
+
+    return filtered;
+  };
+
+  // Calculate level from XP (level = floor(sqrt(xp/100)))
+  const calculateLevel = (xp) => {
+    if (!xp || xp === 0) return 1;
+    const level = Math.floor(Math.sqrt(xp / 100));
+    return level === 0 ? 1 : level;
+  };
+
+  // Calculate XP needed for next level
+  const getXPForNextLevel = (level) => {
+    return (level + 1) ** 2 * 100;
+  };
+
   const renderHenCard = (hen) => {
+    const level = calculateLevel(hen.xp || 0);
+    const currentXP = hen.xp || 0;
+    const nextLevelXP = getXPForNextLevel(level);
+    const prevLevelXP = level === 1 ? 0 : (level ** 2 * 100);
+    const xpProgress = ((currentXP - prevLevelXP) / (nextLevelXP - prevLevelXP)) * 100;
+
     return (
       <div key={hen.id} className="hen-card nft-card">
         <div className="nft-header">
@@ -269,10 +466,21 @@ function App() {
         <div className="hen-avatar">
           <div className="hen-emoji">🐔</div>
           <div className="generation-badge">Gen {hen.generation}</div>
+          <div className="level-badge">Lvl {level}</div>
         </div>
 
         <div className="hen-info">
           <h3 className="hen-title">CryptoChuck #{hen.id}</h3>
+          
+          <div className="xp-section">
+            <div className="xp-header">
+              <span className="xp-label">⭐ XP: {currentXP} / {nextLevelXP}</span>
+              <span className="xp-level">Level {level}</span>
+            </div>
+            <div className="xp-bar">
+              <div className="xp-fill" style={{ width: `${xpProgress}%` }}></div>
+            </div>
+          </div>
           
           <div className="hen-stats">
             <div className="stat">
@@ -336,6 +544,7 @@ function App() {
       </div>
     );
   };
+
   // Show landing page if not connected
   if (!account && showLanding) {
     return <LandingPage onConnect={initWeb3} />;
@@ -343,6 +552,15 @@ function App() {
 
   return (
     <div className="app">
+      <TransactionModal
+        isOpen={txModal.isOpen}
+        onClose={() => setTxModal({ ...txModal, isOpen: false })}
+        status={txModal.status}
+        txHash={txModal.txHash}
+        chainId={11155111}
+        message={txModal.message}
+      />
+      
       <header className="app-header">
         <div className="header-content">
           <div className="logo">
@@ -371,6 +589,12 @@ function App() {
             <button onClick={() => setSelectedTab('marketplace')} className={`nav-btn ${selectedTab === 'marketplace' ? 'active' : ''}`}>
               Marketplace
             </button>
+            <button onClick={() => setSelectedTab('leaderboard')} className={`nav-btn ${selectedTab === 'leaderboard' ? 'active' : ''}`}>
+              Leaderboard
+            </button>
+            <button onClick={() => setSelectedTab('history')} className={`nav-btn ${selectedTab === 'history' ? 'active' : ''}`}>
+              History
+            </button>
           </nav>
           <div>
             {account ? (
@@ -382,11 +606,20 @@ function App() {
         </div>
       </header>
 
+      {error && (
+        <div className="error-banner">
+          <span>{error}</span>
+          <button className="close-error" onClick={() => setError('')}>×</button>
+        </div>
+      )}
+
       {wrongNetwork && account && (
         <div className="network-warning">
           <h3>⚠️ Wrong Network</h3>
-          <p>Please switch MetaMask to Hardhat Local network:</p>
-          <p>Network: Hardhat Local | RPC URL: http://127.0.0.1:8545 | Chain ID: 31337</p>
+          <p>Please switch MetaMask to Sepolia Testnet:</p>
+          <p><strong>Network:</strong> Sepolia Testnet</p>
+          <p><strong>Chain ID:</strong> 11155111</p>
+          <p><strong>RPC URL:</strong> https://sepolia.infura.io/v3/</p>
         </div>
       )}
 
@@ -445,14 +678,54 @@ function App() {
                   </div>
                   <div className="stat-box">
                     <span className="stat-label">Network</span>
-                    <span className="stat-value">Hardhat Local</span>
+                    <span className="stat-value">Sepolia</span>
                   </div>
                 </div>
               </div>
-              <button onClick={mintHen} disabled={loading} className="btn btn-primary">
-                {loading ? 'Minting...' : '🎨 Mint New NFT'}
-              </button>
+              <div className="header-actions">
+                <button onClick={mintHen} disabled={loading} className="btn btn-primary">
+                  {loading ? 'Minting...' : '🎨 Mint NFT (0.01 ETH)'}
+                </button>
+                <button onClick={() => batchMintHens(3)} disabled={loading} className="btn btn-secondary">
+                  {loading ? 'Minting...' : '⚡ Batch Mint 3x (0.03 ETH)'}
+                </button>
+              </div>
             </div>
+            
+            {myHens.length > 0 && (
+              <div className="filter-controls">
+                <input
+                  type="text"
+                  placeholder="🔍 Search by ID..."
+                  value={searchId}
+                  onChange={(e) => setSearchId(e.target.value)}
+                  className="search-input"
+                />
+                
+                <select value={filterGeneration} onChange={(e) => setFilterGeneration(e.target.value)} className="filter-select">
+                  <option value="all">All Generations</option>
+                  <option value="0">Gen 0</option>
+                  <option value="1">Gen 1</option>
+                  <option value="2+">Gen 2+</option>
+                </select>
+                
+                <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="filter-select">
+                  <option value="power">Sort by Power</option>
+                  <option value="generation">Sort by Generation</option>
+                  <option value="wins">Sort by Wins</option>
+                  <option value="id">Sort by ID</option>
+                </select>
+                
+                <button 
+                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')} 
+                  className="btn btn-sm btn-outline"
+                  title="Toggle sort order"
+                >
+                  {sortOrder === 'asc' ? '⬆️ Ascending' : '⬇️ Descending'}
+                </button>
+              </div>
+            )}
+            
             {loading ? (
               <div className="loading">Loading your NFTs...</div>
             ) : myHens.length === 0 ? (
@@ -464,9 +737,14 @@ function App() {
                 </button>
               </div>
             ) : (
-              <div className="hens-grid">
-                {myHens.map(renderHenCard)}
-              </div>
+              <>
+                <div className="results-info">
+                  Showing {getFilteredAndSortedHens().length} of {myHens.length} hens
+                </div>
+                <div className="hens-grid">
+                  {getFilteredAndSortedHens().map(renderHenCard)}
+                </div>
+              </>
             )}
           </div>
         )}
@@ -505,6 +783,20 @@ function App() {
             contracts={contracts} 
             account={account} 
             loadMyHens={loadMyHens}
+          />
+        )}
+
+        {selectedTab === 'leaderboard' && (
+          <Leaderboard 
+            contracts={contracts} 
+            account={account}
+          />
+        )}
+
+        {selectedTab === 'history' && (
+          <TransactionHistory 
+            account={account}
+            chainId={11155111}
           />
         )}
       </main>

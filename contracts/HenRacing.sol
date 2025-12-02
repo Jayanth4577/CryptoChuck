@@ -12,17 +12,20 @@ interface IHenNFT {
         uint8 intelligence;
         uint8 luck;
         uint8 generation;
-        uint256 birthTime;
-        uint256 lastBreedTime;
-        uint256 wins;
-        uint256 losses;
-        uint256 racesWon;
+        uint48 birthTime;
+        uint48 lastBreedTime;
+        uint32 wins;
+        uint32 losses;
+        uint32 racesWon;
+        uint32 xp;
         bool isAlive;
+        uint8 trainingLevel;
     }
     
     function getHenTraits(uint256 tokenId) external view returns (HenTraits memory);
     function ownerOf(uint256 tokenId) external view returns (address);
     function updateRaceStats(uint256 tokenId) external;
+    function addXP(uint256 tokenId, uint256 xpAmount) external;
 }
 
 contract HenRacing is Ownable, ReentrancyGuard {
@@ -272,9 +275,12 @@ contract HenRacing is Ownable, ReentrancyGuard {
             winners[i] = henId;
             prizes[i] = prize;
             
-            // Update race stats
+            // Update race stats and award XP
             if (i == 0) {
                 henNFT.updateRaceStats(henId);
+                henNFT.addXP(henId, 105); // XP_PER_RACE (30) + XP_PER_RACE_WIN (75)
+            } else {
+                henNFT.addXP(henId, 30); // XP_PER_RACE only (participation)
             }
             
             // Store result
