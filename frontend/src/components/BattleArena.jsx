@@ -12,6 +12,7 @@ function BattleArena({ contracts, account }) {
   const [activeBattle, setActiveBattle] = useState(null);
   const [battleLog, setBattleLog] = useState([]);
   const [view, setView] = useState('select'); // select, battle, history
+  const [isFighting, setIsFighting] = useState(false);
 
   useEffect(() => {
     if (contracts.henNFT && account) {
@@ -111,50 +112,79 @@ function BattleArena({ contracts, account }) {
     setLoading(true);
     setBattleLog([`⚔️ Battle initiated between Hen #${selectedHen.id} and Hen #${opponent.id}!`]);
     setView('battle');
+    setIsFighting(true);
 
     try {
-      const tx = await contracts.henBattle.createBattle(selectedHen.id, opponent.id);
+      // Check if contract exists
+      if (!contracts.henBattle) {
+        throw new Error('Battle contract not initialized');
+      }
+
+      setBattleLog(prev => [...prev, '📝 Preparing battle transaction...']);
+      
+      const tx = await contracts.henBattle.createBattle(
+        selectedHen.id,
+        opponent.id
+      );
       
       setBattleLog(prev => [...prev, '📝 Transaction submitted...']);
+      setBattleLog(prev => [...prev, `🔗 TX Hash: ${tx.hash.slice(0, 10)}...`]);
       setBattleLog(prev => [...prev, '⏳ Waiting for confirmation...']);
       
       const receipt = await tx.wait();
       
-      setBattleLog(prev => [...prev, '✅ Battle executed on blockchain!']);
-      setBattleLog(prev => [...prev, '🎲 Processing results...']);
+      setBattleLog(prev => [...prev, `✅ Battle executed in block #${receipt.blockNumber}!`]);
+      setBattleLog(prev => [...prev, '🎲 Processing battle results...']);
 
-      // Listen for battle events
-      const battleCompleteEvent = receipt.logs.find(log => {
+      // Parse battle events
+      let battleCompleteEvent = null;
+      for (const log of receipt.logs) {
         try {
-          const parsed = contracts.henBattle.interface.parseLog(log);
-          return parsed.name === 'BattleComplete';
-        } catch {
-          return false;
+          const parsed = contracts.henBattle.interface.parseLog({
+            topics: log.topics,
+            data: log.data
+          });
+          if (parsed && parsed.name === 'BattleComplete') {
+            battleCompleteEvent = parsed;
+            break;
+          }
+        } catch (e) {
+          // Skip logs that can't be parsed
+          continue;
         }
-      });
+      }
 
       if (battleCompleteEvent) {
-        const parsed = contracts.henBattle.interface.parseLog(battleCompleteEvent);
-        const winnerId = parsed.args.winnerId.toString();
-        const loserId = parsed.args.loserId.toString();
+        const winnerId = battleCompleteEvent.args.winnerId.toString();
+        const loserId = battleCompleteEvent.args.loserId.toString();
+        const rewardAmount = ethers.formatEther(battleCompleteEvent.args.rewardAmount);
 
         setActiveBattle({
           winnerId,
           loserId,
-          winner: parsed.args.winner,
+          winner: battleCompleteEvent.args.winner,
+          rewardAmount,
         });
 
         setBattleLog(prev => [...prev, `🏆 Hen #${winnerId} wins the battle!`]);
-        setBattleLog(prev => [...prev, `💔 Hen #${loserId} loses the battle`]);
-        setBattleLog(prev => [...prev, `💰 Winner receives battle rewards!`]);
+        setBattleLog(prev => [...prev, `💔 Hen #${loserId} was defeated`]);
+        setBattleLog(prev => [...prev, `💰 Winner receives ${rewardAmount} tokens!`]);
 
         if (winnerId === selectedHen.id) {
-          setBattleLog(prev => [...prev, '🎉 Victory! Your hen won!']);
+          setBattleLog(prev => [...prev, '🎉 🎊 VICTORY! Your hen won! 🎊 🎉']);
         } else {
-          setBattleLog(prev => [...prev, '😢 Defeat! Better luck next time!']);
+          setBattleLog(prev => [...prev, '😢 Defeat! Train harder for the next battle!']);
         }
+      } else {
+        setBattleLog(prev => [...prev, '⚠️ Battle completed but results not found in logs']);
       }
 
+      // Stop fighting animation
+      setTimeout(() => {
+        setIsFighting(false);
+      }, 1000);
+
+      // Reload data after battle
       setTimeout(() => {
         loadHens();
         loadBattleHistory();
@@ -162,7 +192,34 @@ function BattleArena({ contracts, account }) {
 
     } catch (error) {
       console.error('Error starting battle:', error);
-      setBattleLog(prev => [...prev, `❌ Battle failed: ${error.message}`]);
+      
+      let errorMessage = 'Unknown error occurred';
+      
+      if (error.reason) {
+        errorMessage = error.reason;
+      } else if (error.message) {
+        if (error.message.includes('user rejected')) {
+          errorMessage = 'Transaction rejected by user';
+        } else if (error.message.includes('insufficient funds')) {
+          errorMessage = 'Insufficient funds for gas';
+        } else if (error.message.includes('Hen 1 on cooldown')) {
+          errorMessage = 'Your hen is on cooldown';
+        } else if (error.message.includes('Hen 2 on cooldown')) {
+          errorMessage = 'Opponent hen is on cooldown';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      setBattleLog(prev => [...prev, `❌ Battle failed: ${errorMessage}`]);
+      alert(`Battle Error: ${errorMessage}`);
+      
+      // Return to selection on error
+      setTimeout(() => {
+        setView('select');
+        setLoading(false);
+      }, 3000);
+      return;
     }
     setLoading(false);
   };
@@ -308,16 +365,32 @@ function BattleArena({ contracts, account }) {
             {!selectedHen ? (
               <div className="selection-section">
                 <h3>🐔 Select Your Hen</h3>
-                <div className="hens-grid">
-                  {myHens.map(hen => renderHenCard(hen, false, setSelectedHen))}
-                </div>
+                {loading ? (
+                  <div className="loading-hens">Loading your hens...</div>
+                ) : myHens.length === 0 ? (
+                  <div className="no-hens">
+                    <p>You don't have any hens yet!</p>
+                    <p>Go to the Marketplace to mint your first hen.</p>
+                  </div>
+                ) : (
+                  <div className="hens-grid">
+                    {myHens.map(hen => renderHenCard(hen, false, setSelectedHen))}
+                  </div>
+                )}
               </div>
             ) : !opponent && (
               <div className="selection-section">
                 <h3>🎯 Select Opponent</h3>
-                <div className="hens-grid">
-                  {myHens.filter(hen => hen.id !== selectedHen.id).map(hen => renderHenCard(hen, false, setOpponent))}
-                </div>
+                {myHens.filter(hen => hen.id !== selectedHen.id).length === 0 ? (
+                  <div className="no-hens">
+                    <p>You need at least 2 hens to battle!</p>
+                    <p>Go mint another hen to practice battles.</p>
+                  </div>
+                ) : (
+                  <div className="hens-grid">
+                    {myHens.filter(hen => hen.id !== selectedHen.id).map(hen => renderHenCard(hen, false, setOpponent))}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -326,13 +399,32 @@ function BattleArena({ contracts, account }) {
 
       {view === 'battle' && (
         <div className="battle-view">
-          <div className="battle-participants">
-            <div className="participant">
-              {renderHenCard(selectedHen, false, null, false)}
+          <div className={`battle-participants ${isFighting ? 'fighting' : ''}`}>
+            <div className={`participant hen-left ${isFighting ? 'attacking' : ''}`}>
+              <div className="hen-fighter">
+                {selectedHen && renderHenCard(selectedHen, false, null, false)}
+                {isFighting && (
+                  <div className="attack-effects">
+                    <span className="punch-left">👊</span>
+                    <span className="spark">💥</span>
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="battle-vs">⚔️</div>
-            <div className="participant">
-              {renderHenCard(opponent, false, null, false)}
+            <div className="battle-vs-container">
+              <div className={`battle-vs ${isFighting ? 'shaking' : ''}`}>⚔️</div>
+              {isFighting && <div className="battle-sparks">✨💥✨</div>}
+            </div>
+            <div className={`participant hen-right ${isFighting ? 'attacking' : ''}`}>
+              <div className="hen-fighter">
+                {opponent && renderHenCard(opponent, false, null, false)}
+                {isFighting && (
+                  <div className="attack-effects">
+                    <span className="punch-right">👊</span>
+                    <span className="spark">💥</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -349,18 +441,45 @@ function BattleArena({ contracts, account }) {
 
           {activeBattle && (
             <div className="battle-result">
-              <h2>
-                {activeBattle.winnerId === selectedHen.id ? '🎉 Victory!' : '😢 Defeat'}
-              </h2>
-              <button onClick={() => {
-                setView('select');
-                setSelectedHen(null);
-                setOpponent(null);
-                setActiveBattle(null);
-                setBattleLog([]);
-              }} className="new-battle-btn">
-                ⚔️ New Battle
-              </button>
+              <div className="result-header">
+                <h2>
+                  {activeBattle.winnerId === selectedHen.id ? '🎉 Victory!' : '😢 Defeat'}
+                </h2>
+                <p className="result-subtitle">
+                  {activeBattle.winnerId === selectedHen.id 
+                    ? `Congratulations! Hen #${selectedHen.id} emerged victorious!` 
+                    : `Better luck next time! Hen #${opponent.id} won this battle.`}
+                </p>
+              </div>
+              
+              <div className="result-stats">
+                <div className="result-stat">
+                  <span className="stat-icon">🏆</span>
+                  <span className="stat-label">Winner</span>
+                  <span className="stat-value">Hen #{activeBattle.winnerId}</span>
+                </div>
+                <div className="result-stat">
+                  <span className="stat-icon">🎯</span>
+                  <span className="stat-label">Battle Complete</span>
+                  <span className="stat-value">Success!</span>
+                </div>
+              </div>
+
+              <div className="result-actions">
+                <button onClick={() => {
+                  setView('select');
+                  setSelectedHen(null);
+                  setOpponent(null);
+                  setActiveBattle(null);
+                  setBattleLog([]);
+                  setIsFighting(false);
+                }} className="btn-new-battle">
+                  ⚔️ New Battle
+                </button>
+                <button onClick={() => setView('history')} className="btn-view-history">
+                  📜 View History
+                </button>
+              </div>
             </div>
           )}
         </div>

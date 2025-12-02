@@ -64,7 +64,7 @@ function Breeding({ contracts, account, loadMyHens }) {
     if (!parent1 || !parent2) return;
 
     try {
-      const result = await contracts.henBreeding.canBreed(parent1.id, parent2.id);
+      const result = await contracts.henBreeding.canBreed(Number(parent1.id), Number(parent2.id));
       setBreedingInfo({
         canBreed: result[0],
         reason: result[1],
@@ -109,9 +109,11 @@ function Breeding({ contracts, account, loadMyHens }) {
     setLoading(true);
     try {
       const breedingCost = await contracts.henBreeding.BREEDING_COST();
-      const tx = await contracts.henBreeding.breedHens(parent1.id, parent2.id, {
-        value: breedingCost,
-      });
+      const tx = await contracts.henBreeding.breedHens(
+        Number(parent1.id), 
+        Number(parent2.id), 
+        { value: breedingCost }
+      );
       
       const receipt = await tx.wait();
       

@@ -56,7 +56,11 @@ contract HenRacing is Ownable, ReentrancyGuard {
     mapping(uint256 => Race) public races;
     mapping(uint256 => RaceResult[]) public raceResults;
     mapping(uint256 => mapping(uint256 => bool)) public henInRace;
+    mapping(uint256 => uint256) public henActiveRace; // Tracks which race a hen is currently in (0 = none)
     uint256 public raceCounter;
+    uint256 public activeRacesCount;
+    uint256 public constant MAX_ACTIVE_RACES = 2;
+    uint256 public constant RACE_DURATION = 30; // 30 seconds
     
     // Prize distribution (1st: 50%, 2nd: 30%, 3rd: 20%)
     uint256[3] public prizeDistribution = [50, 30, 20];
@@ -91,25 +95,26 @@ contract HenRacing is Ownable, ReentrancyGuard {
         henNFT = IHenNFT(_henNFTAddress);
     }
     
-    // Create a new race
+    // Create a new race (anyone can create)
     function createRace(
-        uint256 startTime,
         uint256 entryFee,
         uint256 maxParticipants
-    ) external onlyOwner returns (uint256) {
-        require(startTime > block.timestamp, "Start time must be in future");
-        require(maxParticipants >= 2 && maxParticipants <= 20, "Invalid participant count");
+    ) external returns (uint256) {
+        require(activeRacesCount < MAX_ACTIVE_RACES, "Maximum active races reached");
+        require(entryFee >= 0.001 ether && entryFee <= 1 ether, "Entry fee must be 0.001-1 ETH");
+        require(maxParticipants >= 5 && maxParticipants <= 20, "Participant count must be 5-20");
         
         raceCounter++;
+        activeRacesCount++;
         Race storage newRace = races[raceCounter];
         newRace.raceId = raceCounter;
-        newRace.startTime = startTime;
+        newRace.startTime = 0; // Will be set when race starts
         newRace.entryFee = entryFee;
         newRace.maxParticipants = maxParticipants;
         newRace.isActive = true;
         newRace.isComplete = false;
         
-        emit RaceCreated(raceCounter, startTime, entryFee, maxParticipants);
+        emit RaceCreated(raceCounter, block.timestamp, entryFee, maxParticipants);
         return raceCounter;
     }
     
@@ -123,9 +128,10 @@ contract HenRacing is Ownable, ReentrancyGuard {
         
         require(race.isActive, "Race not active");
         require(!race.isComplete, "Race already complete");
-        require(block.timestamp < race.startTime, "Race already started");
+        require(race.startTime == 0 || block.timestamp < race.startTime, "Race already started");
         require(henNFT.ownerOf(henId) == msg.sender, "Not owner of hen");
         require(!henInRace[raceId][henId], "Hen already entered");
+        require(henActiveRace[henId] == 0, "Hen already in an active race");
         require(race.participants.length < race.maxParticipants, "Race full");
         require(msg.value >= race.entryFee, "Insufficient entry fee");
         
@@ -135,6 +141,7 @@ contract HenRacing is Ownable, ReentrancyGuard {
         race.participants.push(henId);
         race.prizePool += race.entryFee;
         henInRace[raceId][henId] = true;
+        henActiveRace[henId] = raceId;
         
         emit HenEntered(raceId, henId, msg.sender);
         
@@ -143,31 +150,44 @@ contract HenRacing is Ownable, ReentrancyGuard {
             (bool success, ) = payable(msg.sender).call{value: msg.value - race.entryFee}("");
             require(success, "Refund failed");
         }
-        
-        // Auto-start if race is full
-        if (race.participants.length == race.maxParticipants) {
-            _startRace(raceId);
-        }
     }
     
     // Manually start a race
     function startRace(uint256 raceId) external {
         Race storage race = races[raceId];
-        require(block.timestamp >= race.startTime, "Race not ready to start");
-        require(race.participants.length >= 2, "Not enough participants");
+        require(race.isActive, "Race not active");
+        require(race.startTime == 0 || race.startTime > 0, "Invalid race");
+        require(race.participants.length >= 5, "Minimum 5 participants required");
         require(!race.isComplete, "Race already complete");
         
-        _startRace(raceId);
-    }
-    
-    // Internal function to start and execute race
-    function _startRace(uint256 raceId) private {
-        Race storage race = races[raceId];
+        race.startTime = block.timestamp;
         
         emit RaceStarted(raceId, race.participants);
+    }
+    
+    // Complete a race after 30 seconds
+    function completeRace(uint256 raceId) external {
+        Race storage race = races[raceId];
+        require(race.startTime > 0, "Race not started");
+        require(!race.isComplete, "Race already complete");
+        require(block.timestamp >= race.startTime + RACE_DURATION, "Race still in progress");
         
-        // Simulate race
         _simulateRace(raceId);
+        
+        // Auto-create a new race with same settings if under limit
+        if (activeRacesCount < MAX_ACTIVE_RACES) {
+            raceCounter++;
+            activeRacesCount++;
+            Race storage newRace = races[raceCounter];
+            newRace.raceId = raceCounter;
+            newRace.startTime = 0;
+            newRace.entryFee = race.entryFee;
+            newRace.maxParticipants = race.maxParticipants;
+            newRace.isActive = true;
+            newRace.isComplete = false;
+            
+            emit RaceCreated(raceCounter, block.timestamp, race.entryFee, race.maxParticipants);
+        }
     }
     
     // Simulate race based on hen attributes
@@ -207,6 +227,12 @@ contract HenRacing is Ownable, ReentrancyGuard {
         race.finalPositions = participants;
         race.isComplete = true;
         race.endTime = block.timestamp;
+        activeRacesCount--;
+        
+        // Clear hen active race tracking
+        for (uint256 i = 0; i < participants.length; i++) {
+            henActiveRace[participants[i]] = 0;
+        }
     }
     
     // Sort hens by finish time (bubble sort for simplicity)
@@ -341,12 +367,16 @@ contract HenRacing is Ownable, ReentrancyGuard {
             return (false, "Race already complete");
         }
         
-        if (block.timestamp >= race.startTime) {
+        if (race.startTime > 0 && block.timestamp >= race.startTime) {
             return (false, "Race already started");
         }
         
         if (henInRace[raceId][henId]) {
             return (false, "Hen already entered");
+        }
+        
+        if (henActiveRace[henId] != 0) {
+            return (false, "Hen in active race");
         }
         
         if (race.participants.length >= race.maxParticipants) {
@@ -365,17 +395,22 @@ contract HenRacing is Ownable, ReentrancyGuard {
     function cancelRace(uint256 raceId) external onlyOwner {
         Race storage race = races[raceId];
         require(!race.isComplete, "Race already complete");
-        require(race.participants.length < 2, "Too many participants to cancel");
+        require(race.startTime == 0, "Race already started");
+        require(race.participants.length < 5, "Too many participants to cancel");
         
-        // Refund participants
+        // Refund participants and clear tracking
         for (uint256 i = 0; i < race.participants.length; i++) {
             uint256 henId = race.participants[i];
             address owner = henNFT.ownerOf(henId);
+            henActiveRace[henId] = 0;
             
             (bool success, ) = payable(owner).call{value: race.entryFee}("");
             require(success, "Refund failed");
         }
         
         race.isActive = false;
+        if (activeRacesCount > 0) {
+            activeRacesCount--;
+        }
     }
 }

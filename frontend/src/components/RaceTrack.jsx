@@ -4,12 +4,16 @@ import './RaceTrack.css';
 
 function RaceTrack({ contracts, account }) {
   const [myHens, setMyHens] = useState([]);
+  const [pendingRaces, setPendingRaces] = useState([]);
   const [activeRaces, setActiveRaces] = useState([]);
   const [completedRaces, setCompletedRaces] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedRace, setSelectedRace] = useState(null);
   const [selectedHen, setSelectedHen] = useState(null);
-  const [view, setView] = useState('races'); // races, my-hens, results
+  const [view, setView] = useState('pending'); // pending, active, my-hens, results
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createEntryFee, setCreateEntryFee] = useState('0.01');
+  const [createMaxParticipants, setCreateMaxParticipants] = useState(10);
 
   useEffect(() => {
     if (contracts.henNFT && account) {
@@ -55,41 +59,55 @@ function RaceTrack({ contracts, account }) {
   const loadRaces = async () => {
     setLoading(true);
     try {
-      // Load first 10 races (simplified)
+      const pending = [];
       const active = [];
       const completed = [];
 
-      for (let i = 1; i <= 10; i++) {
+      // Get total number of races created
+      const raceCounter = await contracts.henRacing.raceCounter();
+      const totalRaces = Number(raceCounter);
+
+      // Load all races up to raceCounter
+      for (let i = 1; i <= totalRaces; i++) {
         try {
+          // Get race data from contract
+          const raceData = await contracts.henRacing.races(i);
           const participants = await contracts.henRacing.getRaceParticipants(i);
           
-          if (participants.length > 0) {
-            const race = {
-              id: i,
-              participants: participants.map(p => p.toString()),
-              maxParticipants: 20, // From contract
-              entryFee: '0.005', // From contract
-              prizePool: (participants.length * 0.005).toString(),
-            };
+          const race = {
+            id: i,
+            startTime: Number(raceData.startTime),
+            entryFee: ethers.formatEther(raceData.entryFee),
+            maxParticipants: Number(raceData.maxParticipants),
+            prizePool: ethers.formatEther(raceData.prizePool),
+            participants: participants.map(p => p.toString()),
+            isActive: raceData.isActive,
+            isComplete: raceData.isComplete,
+          };
 
-            // Check if race is complete (simplified check)
+          // Check if race is complete
+          if (race.isComplete) {
             const results = await contracts.henRacing.getRaceResults(i);
-            if (results.length > 0) {
-              race.results = results.map(r => ({
-                henId: r.henId.toString(),
-                position: Number(r.position),
-                prize: ethers.formatEther(r.prize),
-              }));
-              completed.push(race);
-            } else {
-              active.push(race);
-            }
+            race.results = results.map(r => ({
+              henId: r.henId.toString(),
+              position: Number(r.position),
+              prize: ethers.formatEther(r.prize),
+            }));
+            completed.push(race);
+          } else if (race.isActive && race.startTime > 0) {
+            // Race has started (startTime set)
+            active.push(race);
+          } else if (race.isActive) {
+            // Race not started yet (startTime = 0)
+            pending.push(race);
           }
         } catch (error) {
+          console.error(`Error loading race ${i}:`, error);
           continue;
         }
       }
 
+      setPendingRaces(pending);
       setActiveRaces(active);
       setCompletedRaces(completed);
     } catch (error) {
@@ -101,7 +119,10 @@ function RaceTrack({ contracts, account }) {
   const enterRace = async (raceId, henId) => {
     setLoading(true);
     try {
-      const entryFee = ethers.parseEther('0.005');
+      // Get the race entry fee
+      const raceData = await contracts.henRacing.races(raceId);
+      const entryFee = raceData.entryFee;
+      
       const tx = await contracts.henRacing.enterRace(raceId, henId, {
         value: entryFee,
       });
@@ -114,6 +135,53 @@ function RaceTrack({ contracts, account }) {
     } catch (error) {
       console.error('Error entering race:', error);
       alert('Failed to enter race: ' + error.message);
+    }
+    setLoading(false);
+  };
+
+  const startRace = async (raceId) => {
+    setLoading(true);
+    try {
+      const tx = await contracts.henRacing.startRace(raceId);
+      await tx.wait();
+      alert('🏁 Race started! It will complete in 30 seconds.');
+      loadRaces();
+      
+      // Auto-complete after 30 seconds
+      setTimeout(() => {
+        completeRace(raceId);
+      }, 31000); // 31s to ensure blockchain timestamp passed
+    } catch (error) {
+      console.error('Error starting race:', error);
+      alert('Failed to start race: ' + error.message);
+    }
+    setLoading(false);
+  };
+
+  const completeRace = async (raceId) => {
+    try {
+      const tx = await contracts.henRacing.completeRace(raceId);
+      await tx.wait();
+      alert('🏆 Race completed! Check results tab.');
+      loadRaces();
+    } catch (error) {
+      console.error('Error completing race:', error);
+      // Silently fail if already completed
+    }
+  };
+
+  const createRace = async () => {
+    setLoading(true);
+    try {
+      const entryFee = ethers.parseEther(createEntryFee);
+      const tx = await contracts.henRacing.createRace(entryFee, createMaxParticipants);
+      await tx.wait();
+      alert('🏁 Race created successfully!');
+      setShowCreateModal(false);
+      loadRaces();
+    } catch (error) {
+      console.error('Error creating race:', error);
+      alert('Failed to create race: ' + error.message);
     }
     setLoading(false);
   };
@@ -159,9 +227,11 @@ function RaceTrack({ contracts, account }) {
     );
   };
 
-  const renderRaceCard = (race) => {
-    const spotsLeft = 20 - race.participants.length;
+  const renderPendingRaceCard = (race) => {
+    const spotsLeft = race.maxParticipants - race.participants.length;
     const isFull = spotsLeft === 0;
+    const hasMinParticipants = race.participants.length >= 5;
+    const canStart = hasMinParticipants;
 
     return (
       <div key={race.id} className={`race-card ${isFull ? 'full' : ''}`}>
@@ -182,7 +252,7 @@ function RaceTrack({ contracts, account }) {
           </div>
           <div className="race-info-item">
             <span className="info-label">Participants:</span>
-            <span className="info-value">{race.participants.length}/20</span>
+            <span className="info-value">{race.participants.length}/{race.maxParticipants}</span>
           </div>
           <div className="race-info-item">
             <span className="info-label">Spots Left:</span>
@@ -206,13 +276,74 @@ function RaceTrack({ contracts, account }) {
             </div>
           </div>
         </div>
-        {!isFull && (
+        <div className="race-actions">
+          {!isFull && (
+            <button 
+              onClick={() => setSelectedRace(race)} 
+              className="enter-race-btn"
+              disabled={loading}
+            >
+              Enter Race
+            </button>
+          )}
+          {canStart && (
+            <button 
+              onClick={() => startRace(race.id)} 
+              className="start-race-btn"
+              disabled={loading}
+            >
+              {loading ? 'Starting...' : 'Start Race'}
+            </button>
+          )}
+        </div>
+        {!hasMinParticipants && (
+          <div className="race-warning">
+            ⚠️ Minimum 5 participants required to start
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderActiveRaceCard = (race) => {
+    const now = Date.now() / 1000;
+    const timeElapsed = Math.floor(now - race.startTime);
+    const timeRemaining = Math.max(0, 30 - timeElapsed);
+    const canComplete = timeElapsed >= 30;
+
+    return (
+      <div key={race.id} className="race-card active">
+        <div className="race-card-header">
+          <h3>🏁 Race #{race.id}</h3>
+          <span className="race-status racing">
+            🏃 Racing
+          </span>
+        </div>
+        <div className="race-info">
+          <div className="race-info-item">
+            <span className="info-label">Prize Pool:</span>
+            <span className="info-value">{race.prizePool} ETH</span>
+          </div>
+          <div className="race-info-item">
+            <span className="info-label">Participants:</span>
+            <span className="info-value">{race.participants.length}</span>
+          </div>
+          <div className="race-info-item">
+            <span className="info-label">Time Remaining:</span>
+            <span className="info-value countdown">{timeRemaining}s</span>
+          </div>
+        </div>
+        <div className="racing-indicator">
+          <div className="speed-lines"></div>
+          <p>🏁 Race in progress...</p>
+        </div>
+        {canComplete && (
           <button 
-            onClick={() => setSelectedRace(race)} 
-            className="enter-race-btn"
+            onClick={() => completeRace(race.id)} 
+            className="complete-race-btn"
             disabled={loading}
           >
-            Enter Race
+            {loading ? 'Completing...' : 'Complete Race'}
           </button>
         )}
       </div>
@@ -220,6 +351,9 @@ function RaceTrack({ contracts, account }) {
   };
 
   const renderCompletedRace = (race) => {
+    // Only show top 3 results
+    const topResults = race.results ? race.results.filter(r => r.position <= 3).slice(0, 3) : [];
+    
     return (
       <div key={race.id} className="completed-race-card">
         <div className="race-header">
@@ -227,9 +361,9 @@ function RaceTrack({ contracts, account }) {
           <span className="completed-badge">✅ Completed</span>
         </div>
         <div className="race-results">
-          <h4>🏆 Results</h4>
+          <h4>🏆 Top 3 Winners</h4>
           <div className="results-list">
-            {race.results && race.results.slice(0, 3).map((result, index) => (
+            {topResults.map((result, index) => (
               <div key={index} className={`result-item position-${result.position}`}>
                 <span className="position">
                   {result.position === 1 ? '🥇' : result.position === 2 ? '🥈' : '🥉'}
@@ -257,10 +391,23 @@ function RaceTrack({ contracts, account }) {
 
       <div className="race-nav">
         <button 
-          className={view === 'races' ? 'active' : ''} 
-          onClick={() => setView('races')}
+          onClick={() => setShowCreateModal(true)} 
+          className="create-race-btn-nav"
+          disabled={pendingRaces.length >= 2}
         >
-          🏁 Active Races ({activeRaces.length})
+          ➕ Create Race
+        </button>
+        <button 
+          className={view === 'pending' ? 'active' : ''} 
+          onClick={() => setView('pending')}
+        >
+          ⏳ Pending Races ({pendingRaces.length})
+        </button>
+        <button 
+          className={view === 'active' ? 'active' : ''} 
+          onClick={() => setView('active')}
+        >
+          🏃 Racing ({activeRaces.length})
         </button>
         <button 
           className={view === 'my-hens' ? 'active' : ''} 
@@ -276,18 +423,35 @@ function RaceTrack({ contracts, account }) {
         </button>
       </div>
 
-      {view === 'races' && (
+      {view === 'pending' && (
+        <div className="races-section">
+          {loading ? (
+            <div className="loading">Loading races...</div>
+          ) : pendingRaces.length === 0 ? (
+            <div className="empty-state">
+              <p>No pending races available!</p>
+              <p>All races have started or completed</p>
+            </div>
+          ) : (
+            <div className="races-grid">
+              {pendingRaces.map(renderPendingRaceCard)}
+            </div>
+          )}
+        </div>
+      )}
+
+      {view === 'active' && (
         <div className="races-section">
           {loading ? (
             <div className="loading">Loading races...</div>
           ) : activeRaces.length === 0 ? (
             <div className="empty-state">
-              <p>No active races available!</p>
-              <p>Check back soon for new races</p>
+              <p>No active races right now!</p>
+              <p>Check pending races to start one</p>
             </div>
           ) : (
             <div className="races-grid">
-              {activeRaces.map(renderRaceCard)}
+              {activeRaces.map(renderActiveRaceCard)}
             </div>
           )}
         </div>
@@ -322,6 +486,62 @@ function RaceTrack({ contracts, account }) {
               {completedRaces.map(renderCompletedRace)}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Create Race Modal */}
+      {showCreateModal && (
+        <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>🏁 Create Custom Race</h3>
+              <button className="modal-close" onClick={() => setShowCreateModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <div className="create-race-form">
+                <div className="form-group">
+                  <label>Entry Fee (ETH)</label>
+                  <input 
+                    type="number" 
+                    step="0.001"
+                    min="0.001"
+                    max="1"
+                    value={createEntryFee}
+                    onChange={(e) => setCreateEntryFee(e.target.value)}
+                    placeholder="0.01"
+                  />
+                  <span className="form-hint">Min: 0.001 ETH, Max: 1 ETH</span>
+                </div>
+                <div className="form-group">
+                  <label>Max Participants</label>
+                  <input 
+                    type="number" 
+                    min="5"
+                    max="20"
+                    value={createMaxParticipants}
+                    onChange={(e) => setCreateMaxParticipants(parseInt(e.target.value))}
+                  />
+                  <span className="form-hint">Min: 5, Max: 20</span>
+                </div>
+                <div className="prize-preview">
+                  <h4>Prize Pool Preview (if full):</h4>
+                  <div className="preview-prizes">
+                    <span>🥇 1st: {(parseFloat(createEntryFee) * createMaxParticipants * 0.5).toFixed(4)} ETH</span>
+                    <span>🥈 2nd: {(parseFloat(createEntryFee) * createMaxParticipants * 0.3).toFixed(4)} ETH</span>
+                    <span>🥉 3rd: {(parseFloat(createEntryFee) * createMaxParticipants * 0.2).toFixed(4)} ETH</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="modal-actions">
+              <button onClick={() => setShowCreateModal(false)} className="btn-cancel">
+                Cancel
+              </button>
+              <button onClick={createRace} className="btn-confirm" disabled={loading}>
+                {loading ? 'Creating...' : 'Create Race'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

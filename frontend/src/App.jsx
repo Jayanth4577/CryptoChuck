@@ -143,7 +143,7 @@ function App() {
         const traits = await contracts.henNFT.getHenTraits(henId);
         
         // Convert BigInt values to Numbers for React rendering
-        hensData.push({
+        const henData = {
           id: henId.toString(),
           strength: Number(traits.strength),
           speed: Number(traits.speed),
@@ -154,7 +154,12 @@ function App() {
           wins: Number(traits.wins),
           losses: Number(traits.losses),
           racesWon: Number(traits.racesWon),
-        });
+        };
+        
+        // Calculate total power
+        henData.totalPower = henData.strength + henData.speed + henData.stamina + henData.intelligence + henData.luck;
+        
+        hensData.push(henData);
       }
 
       setMyHens(hensData);
@@ -172,6 +177,47 @@ function App() {
       }
     }
     setLoading(false);
+  };
+
+  const exportNFTMetadata = (hen) => {
+    const metadata = {
+      name: `CryptoChuck #${hen.id}`,
+      description: "A unique fighting hen NFT from CryptoChuck blockchain game",
+      token_id: hen.id,
+      contract_address: CONTRACT_ADDRESSES.henNFT,
+      network: "Hardhat Local",
+      chain_id: 31337,
+      owner: account,
+      attributes: [
+        { trait_type: "Strength", value: hen.strength, max_value: 100 },
+        { trait_type: "Speed", value: hen.speed, max_value: 100 },
+        { trait_type: "Stamina", value: hen.stamina, max_value: 100 },
+        { trait_type: "Intelligence", value: hen.intelligence, max_value: 100 },
+        { trait_type: "Luck", value: hen.luck, max_value: 100 },
+        { trait_type: "Generation", value: hen.generation },
+        { trait_type: "Total Power", value: hen.totalPower },
+        { trait_type: "Battle Record", value: `${hen.wins}W-${hen.losses}L` },
+        { trait_type: "Races Won", value: hen.racesWon }
+      ],
+      properties: {
+        category: "Gaming NFT",
+        type: "Fighting Hen",
+        utility: ["Battle", "Racing", "Breeding", "Trading"]
+      }
+    };
+    
+    const blob = new Blob([JSON.stringify(metadata, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `cryptochuck-nft-${hen.id}.json`;
+    a.click();
+    alert(`NFT metadata exported for CryptoChuck #${hen.id}!`);
+  };
+
+  const copyTokenAddress = () => {
+    navigator.clipboard.writeText(CONTRACT_ADDRESSES.henNFT);
+    alert('NFT Contract address copied to clipboard!');
   };
 
   const mintHen = async () => {
@@ -208,52 +254,81 @@ function App() {
 
   const renderHenCard = (hen) => {
     return (
-      <div key={hen.id} className="hen-card">
-        <div className="hen-card-header">
-          <h3>Hen #{hen.id}</h3>
-          <span className="generation-badge">Gen {hen.generation}</span>
+      <div key={hen.id} className="hen-card nft-card">
+        <div className="nft-header">
+          <div className="nft-token-badge">
+            <span className="nft-icon">🎨</span>
+            <span className="token-id">Token #{hen.id}</span>
+          </div>
+          <div className="nft-power-badge">{hen.totalPower}</div>
         </div>
-        <div className="hen-stats">
-          <div className="stat">
-            <span className="stat-label">💪 Strength:</span>
-            <div className="stat-bar">
-              <div className="stat-fill" style={{ width: `${hen.strength}%` }}></div>
-              <span className="stat-value">{hen.strength}</span>
-            </div>
-          </div>
-          <div className="stat">
-            <span className="stat-label">⚡ Speed:</span>
-            <div className="stat-bar">
-              <div className="stat-fill" style={{ width: `${hen.speed}%` }}></div>
-              <span className="stat-value">{hen.speed}</span>
-            </div>
-          </div>
-          <div className="stat">
-            <span className="stat-label">❤️ Stamina:</span>
-            <div className="stat-bar">
-              <div className="stat-fill" style={{ width: `${hen.stamina}%` }}></div>
-              <span className="stat-value">{hen.stamina}</span>
-            </div>
-          </div>
-          <div className="stat">
-            <span className="stat-label">🧠 Intelligence:</span>
-            <div className="stat-bar">
-              <div className="stat-fill" style={{ width: `${hen.intelligence}%` }}></div>
-              <span className="stat-value">{hen.intelligence}</span>
-            </div>
-          </div>
-          <div className="stat">
-            <span className="stat-label">🍀 Luck:</span>
-            <div className="stat-bar">
-              <div className="stat-fill" style={{ width: `${hen.luck}%` }}></div>
-              <span className="stat-value">{hen.luck}</span>
-            </div>
-          </div>
+
+        <div className="hen-avatar">
+          <div className="hen-emoji">🐔</div>
+          <div className="generation-badge">Gen {hen.generation}</div>
         </div>
-        <div className="hen-record">
-          <span>🏆 Wins: {hen.wins}</span>
-          <span>❌ Losses: {hen.losses}</span>
-          <span>🏁 Races Won: {hen.racesWon}</span>
+
+        <div className="hen-info">
+          <h3 className="hen-title">CryptoChuck #{hen.id}</h3>
+          
+          <div className="hen-stats">
+            <div className="stat">
+              <span className="stat-label">💪 Strength:</span>
+              <div className="stat-bar">
+                <div className="stat-fill" style={{ width: `${hen.strength}%` }}></div>
+                <span className="stat-value">{hen.strength}</span>
+              </div>
+            </div>
+            <div className="stat">
+              <span className="stat-label">⚡ Speed:</span>
+              <div className="stat-bar">
+                <div className="stat-fill" style={{ width: `${hen.speed}%` }}></div>
+                <span className="stat-value">{hen.speed}</span>
+              </div>
+            </div>
+            <div className="stat">
+              <span className="stat-label">❤️ Stamina:</span>
+              <div className="stat-bar">
+                <div className="stat-fill" style={{ width: `${hen.stamina}%` }}></div>
+                <span className="stat-value">{hen.stamina}</span>
+              </div>
+            </div>
+            <div className="stat">
+              <span className="stat-label">🧠 Intelligence:</span>
+              <div className="stat-bar">
+                <div className="stat-fill" style={{ width: `${hen.intelligence}%` }}></div>
+                <span className="stat-value">{hen.intelligence}</span>
+              </div>
+            </div>
+            <div className="stat">
+              <span className="stat-label">🍀 Luck:</span>
+              <div className="stat-bar">
+                <div className="stat-fill" style={{ width: `${hen.luck}%` }}></div>
+                <span className="stat-value">{hen.luck}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="hen-record">
+            <div className="record-item">
+              <span className="record-label">Battles:</span>
+              <span className="record-value">{hen.wins}W - {hen.losses}L</span>
+            </div>
+            <div className="record-item">
+              <span className="record-label">Races Won:</span>
+              <span className="record-value">{hen.racesWon}</span>
+            </div>
+          </div>
+
+          <div className="nft-actions">
+            <button 
+              className="btn btn-sm btn-outline"
+              onClick={() => exportNFTMetadata(hen)}
+              title="Export NFT Metadata"
+            >
+              📥 Export NFT
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -261,10 +336,13 @@ function App() {
 
   return (
     <div className="app">
-      <header className="app-header-modern">
-        <div className="header-inner">
-          <div className="brand">🐔 CryptoChuck</div>
-          <nav className="nav">
+      <header className="app-header">
+        <div className="header-content">
+          <div className="logo">
+            <span className="logo-icon">🐔</span>
+            <span>CryptoChuck</span>
+          </div>
+          <nav className="nav-tabs">
             <button onClick={() => setSelectedTab('home')} className={`nav-btn ${selectedTab === 'home' ? 'active' : ''}`}>
               Home
             </button>
@@ -287,37 +365,25 @@ function App() {
               Marketplace
             </button>
           </nav>
-          <div className="wallet-info">
+          <div>
             {account ? (
-              <span className="wallet-chip">{formatAddress(account)}</span>
+              <button className="wallet-btn">{formatAddress(account)}</button>
             ) : (
-              <button className="btn btn-primary" onClick={initWeb3}>Connect Wallet</button>
+              <button className="wallet-btn" onClick={initWeb3}>Connect Wallet</button>
             )}
           </div>
         </div>
       </header>
 
+      {wrongNetwork && account && (
+        <div className="network-warning">
+          <h3>⚠️ Wrong Network</h3>
+          <p>Please switch MetaMask to Hardhat Local network:</p>
+          <p>Network: Hardhat Local | RPC URL: http://127.0.0.1:8545 | Chain ID: 31337</p>
+        </div>
+      )}
+
       <main className="app-main">
-        {wrongNetwork && account && (
-          <div style={{
-            background: 'linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)',
-            padding: '1rem 1.5rem',
-            borderRadius: '12px',
-            marginBottom: '2rem',
-            border: '1px solid #ff5252',
-            color: 'white'
-          }}>
-            <h3 style={{margin: '0 0 0.5rem 0', fontSize: '1.1rem'}}>⚠️ Wrong Network</h3>
-            <p style={{margin: '0 0 0.75rem 0', fontSize: '0.95rem'}}>
-              Please switch MetaMask to <strong>Hardhat Local</strong> network:
-            </p>
-            <ul style={{margin: '0', paddingLeft: '1.5rem', fontSize: '0.9rem', lineHeight: '1.6'}}>
-              <li>Network: Hardhat Local</li>
-              <li>RPC URL: http://127.0.0.1:8545</li>
-              <li>Chain ID: 31337</li>
-            </ul>
-          </div>
-        )}
         
         {selectedTab === 'home' && (
           <div className="home-section">
@@ -330,19 +396,23 @@ function App() {
             </div>
             <div className="grid-responsive">
               <div className="card">
-                <h3>🧬 Breeding</h3>
+                <span className="card-icon">🧬</span>
+                <h3>Breeding</h3>
                 <p>Breed your hens to create offspring with unique genetic traits</p>
               </div>
               <div className="card">
-                <h3>⚔️ Battles</h3>
+                <span className="card-icon">⚔️</span>
+                <h3>Battles</h3>
                 <p>Engage in skill-based combat and earn rewards</p>
               </div>
               <div className="card">
-                <h3>🏁 Racing</h3>
+                <span className="card-icon">🏁</span>
+                <h3>Racing</h3>
                 <p>Compete in races and win prizes</p>
               </div>
               <div className="card">
-                <h3>🎰 Betting</h3>
+                <span className="card-icon">🎰</span>
+                <h3>Betting</h3>
                 <p>Bet on battles and races to earn passive income</p>
               </div>
             </div>
@@ -351,19 +421,39 @@ function App() {
 
         {selectedTab === 'my-hens' && (
           <div className="my-hens-section">
-            <div className="section-header">
-              <h2>My Hens ({myHens.length})</h2>
+            <div className="nft-collection-header">
+              <div className="collection-info">
+                <h2>🎨 My NFT Collection</h2>
+                <div className="collection-stats">
+                  <div className="stat-box">
+                    <span className="stat-label">Total NFTs</span>
+                    <span className="stat-value">{myHens.length}</span>
+                  </div>
+                  <div className="stat-box">
+                    <span className="stat-label">Contract</span>
+                    <span className="stat-value contract-address" onClick={copyTokenAddress}>
+                      {CONTRACT_ADDRESSES.henNFT.slice(0, 6)}...{CONTRACT_ADDRESSES.henNFT.slice(-4)}
+                      <button className="copy-btn" title="Copy contract address">📋</button>
+                    </span>
+                  </div>
+                  <div className="stat-box">
+                    <span className="stat-label">Network</span>
+                    <span className="stat-value">Hardhat Local</span>
+                  </div>
+                </div>
+              </div>
               <button onClick={mintHen} disabled={loading} className="btn btn-primary">
-                {loading ? 'Minting...' : 'Mint New Hen'}
+                {loading ? 'Minting...' : '🎨 Mint New NFT'}
               </button>
             </div>
             {loading ? (
-              <div className="loading">Loading your hens...</div>
+              <div className="loading">Loading your NFTs...</div>
             ) : myHens.length === 0 ? (
               <div className="empty-state">
-                <p>You don't have any hens yet!</p>
+                <p>You don't own any CryptoChuck NFTs yet!</p>
+                <p>Mint your first hen to start your collection.</p>
                 <button onClick={mintHen} className="mint-button">
-                  Mint Your First Hen
+                  🎨 Mint Your First NFT
                 </button>
               </div>
             ) : (
@@ -412,14 +502,37 @@ function App() {
         )}
       </main>
 
-      <footer className="footer-modern">
-        <div className="footer-inner">
-        <p className="muted">&copy; 2024 CryptoChuck. All rights reserved.</p>
-        <div className="footer-links">
-          <a href="#">Discord</a>
-          <a href="#">Twitter</a>
-          <a href="#">Docs</a>
+      <footer className="app-footer">
+        <div className="footer-content">
+          <div className="footer-brand">
+            <div className="footer-logo">
+              <span className="logo-icon">🐔</span>
+              <span className="logo-text">CryptoChuck</span>
+            </div>
+            <p className="footer-tagline">
+              The ultimate blockchain gaming experience. Own, breed, battle, and race unique NFT hens.
+            </p>
+          </div>
+          
+          <div className="footer-stats">
+            <div className="footer-stat">
+              <span className="stat-icon">🎮</span>
+              <span className="stat-label">Epic Battles</span>
+            </div>
+            <div className="footer-stat">
+              <span className="stat-icon">🏁</span>
+              <span className="stat-label">Thrilling Races</span>
+            </div>
+            <div className="footer-stat">
+              <span className="stat-icon">🧬</span>
+              <span className="stat-label">Unique Breeding</span>
+            </div>
+          </div>
         </div>
+        
+        <div className="footer-bottom">
+          <p>&copy; CryptoChuck. Built on the Blockchain with ❤️</p>
+          <p className="footer-tagline-small">Powered by Ethereum • NFT Gaming Revolution</p>
         </div>
       </footer>
     </div>

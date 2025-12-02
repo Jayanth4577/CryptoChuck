@@ -146,9 +146,19 @@ function BettingAnalytics({ contracts, account }) {
       return;
     }
 
+    const betValue = parseFloat(betAmount);
+    if (betValue < 0.001) {
+      alert('Minimum bet is 0.001 ETH');
+      return;
+    }
+    if (betValue > 10) {
+      alert('Maximum bet is 10 ETH');
+      return;
+    }
+
     setLoading(true);
     try {
-      const amount = ethers.parseEther(betAmount);
+      const amount = ethers.parseEther(betAmount.toString());
       
       let tx;
       if (bettingView === 'battles') {
@@ -174,7 +184,7 @@ function BettingAnalytics({ contracts, account }) {
       loadBettingData();
     } catch (error) {
       console.error('Error placing bet:', error);
-      alert('Failed to place bet: ' + error.message);
+      alert('Failed to place bet: ' + (error.reason || error.message));
     }
     setLoading(false);
   };
@@ -233,16 +243,16 @@ function BettingAnalytics({ contracts, account }) {
               </div>
               <div className="stat-box">
                 <span className="stat-label">Total Wagered</span>
-                <span className="stat-value">{parseFloat(userStats.totalWagered).toFixed(4)} ETH</span>
+                <span className="stat-value">{Math.max(0, parseFloat(userStats.totalWagered || 0)).toFixed(4)} ETH</span>
               </div>
               <div className="stat-box">
                 <span className="stat-label">Total Won</span>
-                <span className="stat-value">{parseFloat(userStats.totalWon).toFixed(4)} ETH</span>
+                <span className="stat-value">{Math.max(0, parseFloat(userStats.totalWon || 0)).toFixed(4)} ETH</span>
               </div>
               <div className="stat-box">
                 <span className="stat-label">Profit/Loss</span>
-                <span className={`stat-value ${parseFloat(userStats.totalWon) - parseFloat(userStats.totalWagered) >= 0 ? 'profit' : 'loss'}`}>
-                  {(parseFloat(userStats.totalWon) - parseFloat(userStats.totalWagered)).toFixed(4)} ETH
+                <span className={`stat-value ${(parseFloat(userStats.totalWon || 0) - parseFloat(userStats.totalWagered || 0)) >= 0 ? 'profit' : 'loss'}`}>
+                  {(parseFloat(userStats.totalWon || 0) - parseFloat(userStats.totalWagered || 0)).toFixed(4)} ETH
                 </span>
               </div>
             </div>
@@ -347,23 +357,47 @@ function BettingAnalytics({ contracts, account }) {
                           {bet.type === 'battle' ? '⚔️ Battle' : '🏁 Race'} #{bet.eventId}
                         </span>
                         <span className={`bet-status ${bet.claimed ? 'claimed' : 'pending'}`}>
-                          {bet.claimed ? '✅ Claimed' : '⏳ Pending'}
+                          {bet.claimed ? (
+                            bet.payout > 0 ? '✅ Won' : '❌ Lost'
+                          ) : (
+                            '⏳ Pending'
+                          )}
                         </span>
                       </div>
                       <div className="bet-details">
-                        <span>Hen #{bet.henId}</span>
-                        {bet.position && <span>Position: {bet.position}</span>}
-                        <span>Bet: {bet.amount} ETH</span>
-                        {bet.payout > 0 && <span className="payout">Payout: {bet.payout} ETH</span>}
+                        <span>🐔 Hen #{bet.henId}</span>
+                        {bet.position && <span>📍 Position: {bet.position}</span>}
+                        <span>💰 Bet: {bet.amount} ETH</span>
+                        {bet.payout > 0 && <span className="payout">💵 Payout: {bet.payout} ETH</span>}
                       </div>
+                      {!bet.claimed && (
+                        <div className="bet-status-info">
+                          <p className="waiting-text">
+                            ⏳ Waiting for {bet.type === 'battle' ? 'battle' : 'race'} #{bet.eventId} to complete
+                          </p>
+                          <p className="help-text">
+                            Go to {bet.type === 'battle' ? '⚔️ Battle Arena' : '🏁 Racing'} to complete the event
+                          </p>
+                        </div>
+                      )}
                       {!bet.claimed && bet.payout > 0 && (
                         <button 
                           onClick={() => claimWinnings(bet)}
                           className="claim-btn"
                           disabled={loading}
                         >
-                          💰 Claim Winnings
+                          💰 Claim {bet.payout} ETH
                         </button>
+                      )}
+                      {bet.claimed && bet.payout === 0 && (
+                        <div className="bet-result lost">
+                          Your hen didn't win this time
+                        </div>
+                      )}
+                      {bet.claimed && bet.payout > 0 && (
+                        <div className="bet-result won">
+                          🎉 Won {bet.payout} ETH!
+                        </div>
                       )}
                     </div>
                   ))}
@@ -378,6 +412,9 @@ function BettingAnalytics({ contracts, account }) {
                 <h3>Place Your Bet</h3>
                 <p>Event: {bettingView === 'battles' ? 'Battle' : 'Race'} #{selectedEvent.id}</p>
                 <p>Selected Hen: #{selectedHen}</p>
+                <div className="bet-info-box">
+                  <p className="bet-limits">Min: 0.001 ETH | Max: 10 ETH</p>
+                </div>
                 <input
                   type="number"
                   step="0.001"
@@ -386,13 +423,25 @@ function BettingAnalytics({ contracts, account }) {
                   placeholder="Bet amount (ETH)"
                   value={betAmount}
                   onChange={(e) => setBetAmount(e.target.value)}
+                  className="bet-input"
                 />
+                <div className="quick-amounts">
+                  <button onClick={() => setBetAmount('0.001')} className="quick-btn">0.001 ETH</button>
+                  <button onClick={() => setBetAmount('0.01')} className="quick-btn">0.01 ETH</button>
+                  <button onClick={() => setBetAmount('0.1')} className="quick-btn">0.1 ETH</button>
+                  <button onClick={() => setBetAmount('1')} className="quick-btn">1 ETH</button>
+                </div>
                 <div className="modal-actions">
                   <button onClick={() => {
                     setSelectedEvent(null);
                     setBetAmount('');
-                  }}>Cancel</button>
-                  <button onClick={placeBet} disabled={loading}>
+                    setSelectedHen(null);
+                  }} className="btn-cancel">Cancel</button>
+                  <button 
+                    onClick={placeBet} 
+                    disabled={loading || !betAmount || parseFloat(betAmount) < 0.001}
+                    className="btn-confirm"
+                  >
                     {loading ? 'Placing...' : 'Confirm Bet'}
                   </button>
                 </div>

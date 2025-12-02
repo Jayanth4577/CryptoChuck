@@ -1,7 +1,8 @@
 require("dotenv").config();
 require("@nomicfoundation/hardhat-toolbox");
+require("@nomicfoundation/hardhat-verify");
 
-const { ALCHEMY_API_KEY, SEPOLIA_RPC_URL, PRIVATE_KEY, ETHERSCAN_API_KEY } = process.env;
+const { INFURA_API_KEY, PRIVATE_KEY, ETHERSCAN_API_KEY } = process.env;
 
 module.exports = {
   solidity: {
@@ -17,8 +18,11 @@ module.exports = {
       url: "http://127.0.0.1:8545"
     },
     sepolia: {
-      url: SEPOLIA_RPC_URL || "",
-      accounts: PRIVATE_KEY ? [PRIVATE_KEY] : []
+      url: `https://sepolia.infura.io/v3/${INFURA_API_KEY}`,
+      accounts: PRIVATE_KEY ? [PRIVATE_KEY] : [],
+      chainId: 11155111,
+      gas: "auto",
+      gasPrice: "auto"
     }
   },
   etherscan: {
