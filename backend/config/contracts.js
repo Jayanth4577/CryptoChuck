@@ -17,19 +17,31 @@ export const getProvider = () => {
   return new ethers.JsonRpcProvider(process.env.SEPOLIA_RPC_URL);
 };
 
-// Contract ABIs - Import from abis folder
-import HenNFTABI from '../abis/HenNFT.json' assert { type: 'json' };
-import HenBreedingABI from '../abis/HenBreeding.json' assert { type: 'json' };
-import HenBattleABI from '../abis/HenBattle.json' assert { type: 'json' };
-import HenRacingABI from '../abis/HenRacing.json' assert { type: 'json' };
-import BettingSystemABI from '../abis/BettingSystem.json' assert { type: 'json' };
+// Contract ABIs - Dynamically import JSON files
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const loadABI = (contractName) => {
+  try {
+    const abiPath = join(__dirname, '..', 'abis', `${contractName}.json`);
+    const abiFile = readFileSync(abiPath, 'utf-8');
+    return JSON.parse(abiFile).abi;
+  } catch (error) {
+    console.error(`Failed to load ABI for ${contractName}:`, error);
+    throw error;
+  }
+};
 
 const ABI_MAP = {
-  HenNFT: HenNFTABI.abi,
-  HenBreeding: HenBreedingABI.abi,
-  HenBattle: HenBattleABI.abi,
-  HenRacing: HenRacingABI.abi,
-  BettingSystem: BettingSystemABI.abi,
+  HenNFT: loadABI('HenNFT'),
+  HenBreeding: loadABI('HenBreeding'),
+  HenBattle: loadABI('HenBattle'),
+  HenRacing: loadABI('HenRacing'),
+  BettingSystem: loadABI('BettingSystem'),
 };
 
 export const getContractABI = (contractName) => {
