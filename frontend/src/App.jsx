@@ -55,9 +55,10 @@ function App() {
 
   // Initialize Web3
   useEffect(() => {
-    // Check if user previously connected
-    if (window.ethereum && window.ethereum.selectedAddress) {
-      // Only auto-connect if already connected
+    // Check if user previously connected AND didn't manually disconnect
+    const wasDisconnected = localStorage.getItem('walletDisconnected');
+    if (window.ethereum && window.ethereum.selectedAddress && !wasDisconnected) {
+      // Only auto-connect if already connected and user didn't disconnect
       checkExistingConnection();
     }
   }, []);
@@ -94,6 +95,9 @@ function App() {
     setError('');
     setShowLanding(true);
     
+    // Store disconnect state to prevent auto-reconnect on refresh
+    localStorage.setItem('walletDisconnected', 'true');
+    
     // Note: MetaMask doesn't have a programmatic disconnect,
     // but clearing state effectively disconnects the app
     console.log('Wallet disconnected');
@@ -106,6 +110,9 @@ function App() {
     }
 
     try {
+      // Clear disconnect flag when user manually connects
+      localStorage.removeItem('walletDisconnected');
+      
       setShowLanding(false); // Hide landing page when connecting
       setError(''); // Clear any previous errors
       
