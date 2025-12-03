@@ -128,7 +128,18 @@ function App() {
         }
       }
       
-      // Request account access
+      // Request account access - this forces MetaMask to show account selector
+      // Using wallet_requestPermissions ensures user can choose different account
+      try {
+        await ethereum.request({
+          method: 'wallet_requestPermissions',
+          params: [{ eth_accounts: {} }]
+        });
+      } catch (permError) {
+        // If user cancels permission request, fall back to regular request
+        console.log('Permission request cancelled, using existing connection');
+      }
+      
       const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
       const provider = new ethers.BrowserProvider(ethereum);
       const signer = await provider.getSigner();
