@@ -359,20 +359,18 @@ function BettingAnalytics({ contracts, account }) {
                         <div className="vs-text">VS</div>
                         <div 
                           className="betting-option"
-                      <div className="bet-header">
-                        <span className="bet-type">
-                          {bet.type === 'battle' ? '⚔️ Battle' : '🏁 Race'} #{bet.eventId}
-                        </span>
-                        <span className={`bet-status ${bet.claimed ? 'claimed' : bet.isComplete ? 'complete' : 'pending'}`}>
-                          {bet.claimed ? (
-                            bet.payout > 0 ? '✅ Won & Claimed' : '❌ Lost'
-                          ) : bet.isComplete ? (
-                            bet.won ? '🎉 Won - Claim Now!' : '❌ Lost'
-                          ) : (
-                            '⏳ Event In Progress'
-                          )}
-                        </span>
+                          onClick={() => {
+                            setSelectedEvent(battle);
+                            setSelectedHen(battle.hen2Id);
+                          }}
+                        >
+                          <span>Hen #{battle.hen2Id}</span>
+                          <span className="odds">{battle.odds2}x</span>
+                        </div>
                       </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           )}
@@ -399,6 +397,8 @@ function BettingAnalytics({ contracts, account }) {
                 </div>
               )}
             </div>
+          )}
+
           {bettingView === 'my-bets' && (
             <div className="my-bets-section">
               <div className="section-header-with-refresh">
@@ -412,8 +412,6 @@ function BettingAnalytics({ contracts, account }) {
                   {loading ? '⏳' : '🔄'} Refresh
                 </button>
               </div>
-              {myBets.length === 0 ? (ction">
-              <h3>📋 My Bets</h3>
               {myBets.length === 0 ? (
                 <div className="empty-state">You haven't placed any bets yet</div>
               ) : (
@@ -424,11 +422,13 @@ function BettingAnalytics({ contracts, account }) {
                         <span className="bet-type">
                           {bet.type === 'battle' ? '⚔️ Battle' : '🏁 Race'} #{bet.eventId}
                         </span>
-                        <span className={`bet-status ${bet.claimed ? 'claimed' : 'pending'}`}>
+                        <span className={`bet-status ${bet.claimed ? 'claimed' : bet.isComplete ? 'complete' : 'pending'}`}>
                           {bet.claimed ? (
-                            bet.payout > 0 ? '✅ Won' : '❌ Lost'
+                            bet.payout > 0 ? '✅ Won & Claimed' : '❌ Lost'
+                          ) : bet.isComplete ? (
+                            bet.won ? '🎉 Won - Claim Now!' : '❌ Lost'
                           ) : (
-                            '⏳ Pending'
+                            '⏳ Event In Progress'
                           )}
                         </span>
                       </div>
@@ -436,6 +436,8 @@ function BettingAnalytics({ contracts, account }) {
                         <span>🐔 Hen #{bet.henId}</span>
                         {bet.position && <span>📍 Position: {bet.position}</span>}
                         <span>💰 Bet: {bet.amount} ETH</span>
+                        {bet.payout > 0 && <span className="payout">💵 Payout: {bet.payout} ETH</span>}
+                      </div>
                       {!bet.claimed && !bet.isComplete && (
                         <div className="bet-status-info">
                           <p className="waiting-text">
@@ -447,8 +449,6 @@ function BettingAnalytics({ contracts, account }) {
                         </div>
                       )}
                       {!bet.claimed && bet.isComplete && bet.won && bet.payout > 0 && (
-                      )}
-                      {!bet.claimed && bet.payout > 0 && (
                         <button 
                           onClick={() => claimWinnings(bet)}
                           className="claim-btn"
