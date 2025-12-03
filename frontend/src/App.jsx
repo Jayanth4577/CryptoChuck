@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import './App.css';
 import LandingPage from './components/LandingPage';
-import Registration from './components/Registration';
 import FaucetGuide from './components/FaucetGuide';
 import Marketplace from './components/Marketplace';
 import Breeding from './components/Breeding';
@@ -590,9 +589,6 @@ function App() {
             <button onClick={() => setSelectedTab('home')} className={`nav-btn ${selectedTab === 'home' ? 'active' : ''}`}>
               Home
             </button>
-            <button onClick={() => setSelectedTab('register')} className={`nav-btn ${selectedTab === 'register' ? 'active' : ''}`}>
-              🎁 Register
-            </button>
             <button onClick={() => setSelectedTab('faucet')} className={`nav-btn ${selectedTab === 'faucet' ? 'active' : ''}`}>
               🚰 Get Free ETH
             </button>
@@ -657,16 +653,6 @@ function App() {
 
       <main className="app-main">
         
-        {selectedTab === 'register' && (
-          <Registration 
-            account={account}
-            onRegistrationComplete={(data) => {
-              console.log('Registration successful:', data);
-              setSelectedTab('faucet'); // Redirect to faucet guide
-            }}
-          />
-        )}
-
         {selectedTab === 'faucet' && <FaucetGuide />}
 
         {selectedTab === 'home' && (
@@ -675,11 +661,8 @@ function App() {
               <h2>Welcome to CryptoChuck!</h2>
               <p>Own, breed, battle, and race unique NFT hens on the blockchain</p>
               <div className="hero-actions">
-                <button onClick={() => setSelectedTab('register')} className="btn btn-success">
-                  🎁 Register Free & Get Started!
-                </button>
                 <button onClick={() => setSelectedTab('faucet')} className="btn btn-success">
-                  🚰 Get Free Test ETH
+                  🚰 Get Free Test ETH First!
                 </button>
                 <button onClick={mintHen} disabled={loading || !account} className="btn btn-primary">
                   {loading ? 'Minting...' : 'Mint Your First Hen (0.01 ETH)'}

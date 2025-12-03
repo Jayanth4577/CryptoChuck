@@ -10,7 +10,6 @@ import breedingRoutes from './routes/breedingRoutes.js';
 import battleRoutes from './routes/battleRoutes.js';
 import racingRoutes from './routes/racingRoutes.js';
 import bettingRoutes from './routes/bettingRoutes.js';
-import registrationRoutes from './routes/registrationRoutes.js';
 
 dotenv.config();
 
@@ -52,7 +51,6 @@ app.get('/', (req, res) => {
       battles: '/api/battles',
       racing: '/api/racing',
       betting: '/api/betting',
-      registration: '/api/registration',
     },
   });
 });
@@ -67,7 +65,6 @@ app.use('/api/breeding', breedingRoutes);
 app.use('/api/battles', battleRoutes);
 app.use('/api/racing', racingRoutes);
 app.use('/api/betting', bettingRoutes);
-app.use('/api/registration', registrationRoutes);
 
 // 404 handler
 app.use((req, res) => {
