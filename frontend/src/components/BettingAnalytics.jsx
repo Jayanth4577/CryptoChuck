@@ -19,6 +19,13 @@ function BettingAnalytics({ contracts, account }) {
     if (contracts.bettingSystem && account) {
       loadBettingData();
       loadAnalytics();
+      
+      // Auto-refresh every 15 seconds to check for completed events
+      const interval = setInterval(() => {
+        loadBettingData();
+      }, 15000);
+      
+      return () => clearInterval(interval);
     }
   }, [contracts, account]);
 
@@ -40,37 +47,86 @@ function BettingAnalytics({ contracts, account }) {
       
       const bets = [];
       
-      // Load last 10 battle bets
-      for (let i = Math.max(0, battleBetIds.length - 10); i < battleBetIds.length; i++) {
+      // Load last 20 battle bets (show more history)
+      for (let i = Math.max(0, battleBetIds.length - 20); i < battleBetIds.length; i++) {
         const betId = battleBetIds[i];
-        const bet = await contracts.bettingSystem.getBattleBet(betId);
-        bets.push({
-          id: betId.toString(),
-          type: 'battle',
-          eventId: bet.battleId.toString(),
-          henId: bet.henId.toString(),
-          amount: ethers.formatEther(bet.amount),
-          payout: ethers.formatEther(bet.payout),
-          claimed: bet.claimed,
-        });
+        try {
+          const bet = await contracts.bettingSystem.getBattleBet(betId);
+          const battleId = bet.battleId.toString();
+          
+          // Check if battle is complete
+          let isComplete = false;
+          let wonBet = false;
+          try {
+            const battle = await contracts.henBattle.getBattle(battleId);
+            isComplete = battle.isComplete;
+            if (isComplete) {
+              wonBet = battle.winnerId.toString() === bet.henId.toString();
+            }
+          } catch (err) {
+            console.debug(`Battle ${battleId} check failed:`, err.message);
+          }
+          
+          bets.push({
+            id: betId.toString(),
+            type: 'battle',
+            eventId: battleId,
+            henId: bet.henId.toString(),
+            amount: ethers.formatEther(bet.amount),
+            payout: ethers.formatEther(bet.payout),
+            claimed: bet.claimed,
+            isComplete: isComplete,
+            won: wonBet,
+          });
+        } catch (err) {
+          console.debug(`Skipping bet ${betId}:`, err.message);
+        }
       }
 
-      // Load last 10 race bets
-      for (let i = Math.max(0, raceBetIds.length - 10); i < raceBetIds.length; i++) {
+      // Load last 20 race bets
+      for (let i = Math.max(0, raceBetIds.length - 20); i < raceBetIds.length; i++) {
         const betId = raceBetIds[i];
-        const bet = await contracts.bettingSystem.getRaceBet(betId);
-        bets.push({
-          id: betId.toString(),
-          type: 'race',
-          eventId: bet.raceId.toString(),
-          henId: bet.henId.toString(),
-          position: Number(bet.position),
-          amount: ethers.formatEther(bet.amount),
-          payout: ethers.formatEther(bet.payout),
-          claimed: bet.claimed,
-        });
+        try {
+          const bet = await contracts.bettingSystem.getRaceBet(betId);
+          const raceId = bet.raceId.toString();
+          
+          // Check if race is complete
+          let isComplete = false;
+          let wonBet = false;
+          try {
+            const race = await contracts.henRacing.getRace(raceId);
+            isComplete = race.isComplete;
+            if (isComplete && race.winners && race.winners.length > 0) {
+              // Check if hen placed in the bet position
+              const position = Number(bet.position);
+              if (position > 0 && position <= race.winners.length) {
+                wonBet = race.winners[position - 1].toString() === bet.henId.toString();
+              }
+            }
+          } catch (err) {
+            console.debug(`Race ${raceId} check failed:`, err.message);
+          }
+          
+          bets.push({
+            id: betId.toString(),
+            type: 'race',
+            eventId: raceId,
+            henId: bet.henId.toString(),
+            position: Number(bet.position),
+            amount: ethers.formatEther(bet.amount),
+            payout: ethers.formatEther(bet.payout),
+            claimed: bet.claimed,
+            isComplete: isComplete,
+            won: wonBet,
+          });
+        } catch (err) {
+          console.debug(`Skipping bet ${betId}:`, err.message);
+        }
       }
 
+      // Sort bets by ID (newest first)
+      bets.sort((a, b) => parseInt(b.id) - parseInt(a.id));
+      
       setMyBets(bets);
 
       // Load active battles (simplified)
@@ -303,18 +359,20 @@ function BettingAnalytics({ contracts, account }) {
                         <div className="vs-text">VS</div>
                         <div 
                           className="betting-option"
-                          onClick={() => {
-                            setSelectedEvent(battle);
-                            setSelectedHen(battle.hen2Id);
-                          }}
-                        >
-                          <span>Hen #{battle.hen2Id}</span>
-                          <span className="odds">{battle.odds2}x</span>
-                        </div>
+                      <div className="bet-header">
+                        <span className="bet-type">
+                          {bet.type === 'battle' ? '⚔️ Battle' : '🏁 Race'} #{bet.eventId}
+                        </span>
+                        <span className={`bet-status ${bet.claimed ? 'claimed' : bet.isComplete ? 'complete' : 'pending'}`}>
+                          {bet.claimed ? (
+                            bet.payout > 0 ? '✅ Won & Claimed' : '❌ Lost'
+                          ) : bet.isComplete ? (
+                            bet.won ? '🎉 Won - Claim Now!' : '❌ Lost'
+                          ) : (
+                            '⏳ Event In Progress'
+                          )}
+                        </span>
                       </div>
-                    </div>
-                  ))}
-                </div>
               )}
             </div>
           )}
@@ -341,10 +399,20 @@ function BettingAnalytics({ contracts, account }) {
                 </div>
               )}
             </div>
-          )}
-
           {bettingView === 'my-bets' && (
             <div className="my-bets-section">
+              <div className="section-header-with-refresh">
+                <h3>📋 My Bets</h3>
+                <button 
+                  onClick={() => loadBettingData()} 
+                  disabled={loading}
+                  className="refresh-btn"
+                  title="Refresh bet status"
+                >
+                  {loading ? '⏳' : '🔄'} Refresh
+                </button>
+              </div>
+              {myBets.length === 0 ? (ction">
               <h3>📋 My Bets</h3>
               {myBets.length === 0 ? (
                 <div className="empty-state">You haven't placed any bets yet</div>
@@ -368,9 +436,7 @@ function BettingAnalytics({ contracts, account }) {
                         <span>🐔 Hen #{bet.henId}</span>
                         {bet.position && <span>📍 Position: {bet.position}</span>}
                         <span>💰 Bet: {bet.amount} ETH</span>
-                        {bet.payout > 0 && <span className="payout">💵 Payout: {bet.payout} ETH</span>}
-                      </div>
-                      {!bet.claimed && (
+                      {!bet.claimed && !bet.isComplete && (
                         <div className="bet-status-info">
                           <p className="waiting-text">
                             ⏳ Waiting for {bet.type === 'battle' ? 'battle' : 'race'} #{bet.eventId} to complete
@@ -379,6 +445,8 @@ function BettingAnalytics({ contracts, account }) {
                             Go to {bet.type === 'battle' ? '⚔️ Battle Arena' : '🏁 Racing'} to complete the event
                           </p>
                         </div>
+                      )}
+                      {!bet.claimed && bet.isComplete && bet.won && bet.payout > 0 && (
                       )}
                       {!bet.claimed && bet.payout > 0 && (
                         <button 
