@@ -298,6 +298,15 @@
   margin-right: auto;
 }
 
+.hero-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
+}
+
 .btn-primary {
   padding: 1.25rem 3rem;
   font-size: 1.1rem;
@@ -314,6 +323,34 @@
 .btn-primary:hover {
   transform: translateY(-4px) scale(1.05);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+}
+
+.btn-success {
+  padding: 1.25rem 3rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  color: white;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 8px 24px rgba(17, 153, 142, 0.4);
+  transition: var(--transition-base);
+  position: relative;
+  z-index: 1;
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.btn-success:hover {
+  transform: translateY(-4px) scale(1.05);
+  box-shadow: 0 12px 32px rgba(17, 153, 142, 0.6);
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 8px 24px rgba(17, 153, 142, 0.4);
+  }
+  50% {
+    box-shadow: 0 8px 32px rgba(17, 153, 142, 0.7);
+  }
 }
 
 /* Feature Grid - Perfectly Centered */
