@@ -458,11 +458,6 @@ function BattleArena({ contracts, account }) {
                   <span className="stat-label">Winner</span>
                   <span className="stat-value">Hen #{activeBattle.winnerId}</span>
                 </div>
-                <div className="result-stat">
-                  <span className="stat-icon">🎯</span>
-                  <span className="stat-label">Battle Complete</span>
-                  <span className="stat-value">Success!</span>
-                </div>
               </div>
 
               <div className="result-actions">
