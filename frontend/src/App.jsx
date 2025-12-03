@@ -81,6 +81,23 @@ function App() {
       console.log('No existing connection found');
     }
   };
+
+  const disconnectWallet = () => {
+    // Clear all state
+    setAccount('');
+    setProvider(null);
+    setSigner(null);
+    setContracts({});
+    setMyHens([]);
+    setWrongNetwork(false);
+    setError('');
+    setShowLanding(true);
+    
+    // Note: MetaMask doesn't have a programmatic disconnect,
+    // but clearing state effectively disconnects the app
+    console.log('Wallet disconnected');
+  };
+
   const initWeb3 = async () => {
     if (typeof window.ethereum === 'undefined') {
       setError('❌ Please install MetaMask to use this app!');
@@ -596,9 +613,16 @@ function App() {
               History
             </button>
           </nav>
-          <div>
+          <div className="wallet-controls">
             {account ? (
-              <button className="wallet-btn">{formatAddress(account)}</button>
+              <div className="wallet-connected">
+                <button className="wallet-btn connected">
+                  {formatAddress(account)}
+                </button>
+                <button className="disconnect-btn" onClick={disconnectWallet} title="Disconnect Wallet">
+                  🔌 Disconnect
+                </button>
+              </div>
             ) : (
               <button className="wallet-btn" onClick={initWeb3}>Connect Wallet</button>
             )}

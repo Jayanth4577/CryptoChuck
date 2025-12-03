@@ -28,12 +28,16 @@ BettingSystem: 0x952411e2CB059f00b3B5Ef9E41DE9adAF2E59841
 ## 🎮 What is CryptoChuck?
 
 A **blockchain-based NFT gaming platform** where players:
+- 🎁 **Register & Get 2 FREE Hens** - No payment needed to start!
 - 🐣 **Mint & Own** unique hen NFTs with genetic traits
 - 🧬 **Breed** hens to create new offspring with inherited genetics
 - ⚔️ **Battle** other players' hens in combat arenas
 - 🏁 **Race** in competitions for prizes
 - 💰 **Trade** hens in the marketplace
 - 🎰 **Bet** on battle and race outcomes
+
+### 🆕 **NEW: Free Registration System**
+New players receive **2 free hen NFTs** upon registration - no minting cost required! Just connect your wallet and start playing immediately.
 
 ---
 
@@ -97,12 +101,16 @@ CryptoChuck/
 
 ### For Players
 
+#### 🎁 Quick Start (Free Registration):
+
 1. **Visit the App**: [cryptochuck.vercel.app](https://cryptochuck.vercel.app)
 2. **Connect Wallet**: Click "Connect Wallet" and approve MetaMask
 3. **Switch Network**: Change to Sepolia Testnet in MetaMask
-4. **Get Test ETH**: Visit [Sepolia Faucet](https://sepoliafaucet.com) for free ETH
-5. **Mint a Hen**: Click "Mint Hen" to create your first NFT
+4. **Register FREE**: Click "Register" to get 2 FREE hens (worth 0.02 ETH!)
+5. **Get Test ETH**: Visit [Sepolia Faucet](https://sepoliafaucet.com) for transaction gas
 6. **Start Playing**: Breed, battle, race, and trade!
+
+**No minting cost! New players get 2 free hens automatically!** 🎉
 
 ### For Developers
 
@@ -173,15 +181,23 @@ npm run dev
 - **Wallet**: MetaMask integration
 - **Deployment**: Vercel
 
----
-
-## 🎮 Game Mechanics
+### Registration System 🆕
+- **Free for new users** - Get 2 hens without paying mint fees
+- One registration per wallet address
+- Optional email for updates
+- Instant hen delivery to your wallet
+- Backend sponsors the gas fees
+- Anti-abuse protection with rate limiting
 
 ### NFT System
 Each hen is an ERC-721 NFT with 5 genetic traits:
 - **Strength**: Combat power
 - **Speed**: Racing ability  
 - **Stamina**: Endurance in events
+- **Intelligence**: Battle strategy
+- **Luck**: Random event modifier
+
+**Power Formula**: `(Strength + Speed + Stamina + Intelligence + Luck) / 5`
 - **Intelligence**: Battle strategy
 - **Luck**: Random event modifier
 
@@ -222,12 +238,19 @@ Each hen is an ERC-721 NFT with 5 genetic traits:
 - Dynamic odds calculation
 - Automatic payout to winners
 
----
+#### Registration (NEW!)
+```
+POST /api/registration/register         - Register new user & get 2 free hens
+GET  /api/registration/check/:address   - Check if wallet is registered
+GET  /api/registration/stats            - Get registration statistics
+```
 
-## 🔌 API Documentation
-
-### Backend Endpoints
-
+#### Hen Management
+```
+GET /api/hens/:tokenId          - Get hen details
+GET /api/hens/user/:address     - Get user's hens
+GET /api/hens/total             - Get total supply
+```
 **Base URL**: `https://cryptochuck-backend.vercel.app`
 
 #### Hen Management
