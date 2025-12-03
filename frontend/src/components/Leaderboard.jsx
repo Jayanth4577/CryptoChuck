@@ -14,14 +14,21 @@ const Leaderboard = ({ contracts, account }) => {
   }, [contracts, sortBy]);
 
   const loadLeaderboard = async () => {
+    if (!contracts.henNFT) {
+      console.error('HenNFT contract not loaded');
+      return;
+    }
+    
     setLoading(true);
     try {
       // Get total supply
       const totalSupply = await contracts.henNFT.totalSupply();
       const allHens = [];
 
-      // Load all hens (in production, use subgraph or backend API)
-      for (let i = 1; i <= Math.min(Number(totalSupply), 100); i++) {
+      // Load all hens (limit to 50 for performance)
+      const maxLoad = Math.min(Number(totalSupply), 50);
+      
+      for (let i = 1; i <= maxLoad; i++) {
         try {
           const traits = await contracts.henNFT.getHenTraits(i);
           const owner = await contracts.henNFT.ownerOf(i);
@@ -50,8 +57,15 @@ const Leaderboard = ({ contracts, account }) => {
 
           allHens.push(henData);
         } catch (err) {
-          console.log(`Hen ${i} doesn't exist`);
+          // Hen might not exist or be burned
+          console.debug(`Skipping hen ${i}`);
         }
+      }
+
+      if (allHens.length === 0) {
+        setLeaderboard([]);
+        setLoading(false);
+        return;
       }
 
       // Sort based on selected criteria
