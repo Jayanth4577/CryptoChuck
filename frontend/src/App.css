@@ -1331,6 +1331,13 @@
   color: rgba(255, 255, 255, 0.4);
 }
 
+/* Dropdown options visibility */
+.filter-select option {
+  background-color: #1a1a2e;
+  color: #ffffff;
+  padding: 10px;
+}
+
 .results-info {
   text-align: center;
   padding: 1rem;

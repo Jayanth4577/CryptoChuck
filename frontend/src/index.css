@@ -113,6 +113,35 @@ input, textarea {
 }
 
 /* ============================================
+   SELECT DROPDOWN FIX - Visible Options
+   ============================================ */
+
+select {
+  font-family: inherit;
+  outline: none;
+  cursor: pointer;
+}
+
+/* Fix dropdown options to be visible */
+select option {
+  background-color: #1a1a2e !important;
+  color: #ffffff !important;
+  padding: 10px !important;
+  font-size: 0.95rem !important;
+}
+
+select option:hover {
+  background-color: #667eea !important;
+  color: #ffffff !important;
+}
+
+select option:checked {
+  background-color: #667eea !important;
+  color: #ffffff !important;
+  font-weight: 600;
+}
+
+/* ============================================
    GLOBAL ANIMATIONS
    ============================================ */
 

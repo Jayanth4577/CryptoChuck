@@ -47,6 +47,13 @@
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
+/* Dropdown options visibility */
+.sort-select option {
+  background-color: #1a1a2e;
+  color: #ffffff;
+  padding: 10px;
+}
+
 .loading-state {
   text-align: center;
   padding: 4rem 2rem;
