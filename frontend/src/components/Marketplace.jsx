@@ -35,25 +35,44 @@ console.error('Failed to load my hens:', e);
 }
 };
 
-const MAX_SCAN = 250; // dev-friendly upper bound
+const MAX_SCAN = 50; // Reduced from 250 to 50 for faster loading
 const loadListings = async () => {
 const results = [];
 try {
+// Batch multiple calls to reduce load time
+const batchSize = 10;
+const promises = [];
+    
 for (let tokenId = 1; tokenId <= MAX_SCAN; tokenId++) {
-try {
-const l = await contracts.henNFT.listings(tokenId);
+promises.push(
+contracts.henNFT.listings(tokenId)
+.then(l => {
 if (l.isActive) {
-results.push({
+return {
 tokenId,
 price: l.price,
 priceEth: ethers.formatEther(l.price),
 seller: l.seller,
 isMine: l.seller?.toLowerCase() === account.toLowerCase(),
-});
+};
 }
-} catch (_) {
-// token may not exist yet
+return null;
+})
+.catch(() => null) // Token doesn't exist
+);
+      
+// Process in batches to avoid overwhelming the network
+if (promises.length >= batchSize) {
+const batchResults = await Promise.all(promises);
+results.push(...batchResults.filter(r => r !== null));
+promises.length = 0; // Clear array
 }
+}
+    
+// Process remaining promises
+if (promises.length > 0) {
+const batchResults = await Promise.all(promises);
+results.push(...batchResults.filter(r => r !== null));
 }
 } catch (e) {
 console.error('Error loading listings:', e);
