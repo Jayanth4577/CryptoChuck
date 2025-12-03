@@ -122,23 +122,21 @@ const Registration = ({ account, onRegistrationComplete }) => {
           <div className="success-icon">🎉</div>
           <h2>Registration Successful!</h2>
           <p className="success-message">
-            Welcome to CryptoChuck! You've received 2 free hens to start your journey!
+            Welcome to CryptoChuck! Your account is registered.
           </p>
           
-          <div className="token-ids">
-            <h3>Your Hens:</h3>
-            <div className="hen-tokens">
-              {tokenIds.map((id) => (
-                <div key={id} className="token-badge">
-                  Hen #{id}
-                </div>
-              ))}
-            </div>
+          <div className="next-steps">
+            <h3>🎮 Next Steps:</h3>
+            <ol>
+              <li>Get free Sepolia ETH from faucets below</li>
+              <li>Go to "My Hens" and mint your first hens (0.01 ETH each)</li>
+              <li>Start breeding, battling, and racing!</li>
+            </ol>
           </div>
 
           <div className="faucet-section">
-            <h3>⚠️ Important: Get Test ETH</h3>
-            <p>You'll need Sepolia ETH for transactions (breeding, battles, etc.)</p>
+            <h3>💰 Get Free Test ETH</h3>
+            <p>You'll need Sepolia ETH to mint hens and play (it's totally free!)</p>
             <div className="faucet-links">
               <a href="https://sepoliafaucet.com" target="_blank" rel="noopener noreferrer" className="faucet-button">
                 🚰 Get Free Sepolia ETH
@@ -148,13 +146,13 @@ const Registration = ({ account, onRegistrationComplete }) => {
               </a>
             </div>
             <p className="faucet-note">
-              You'll receive 0.5 ETH from the faucet - enough for many transactions!
+              You'll receive 0.5 ETH from the faucet - enough for 50 hens!
             </p>
           </div>
 
           <button 
             className="start-playing-btn"
-            onClick={() => onRegistrationComplete && onRegistrationComplete({ tokenIds })}
+            onClick={() => onRegistrationComplete && onRegistrationComplete({})}
           >
             Start Playing! 🎮
           </button>
@@ -168,16 +166,16 @@ const Registration = ({ account, onRegistrationComplete }) => {
       <div className="registration-card">
         <div className="registration-header">
           <h2>🐔 Join CryptoChuck!</h2>
-          <p className="subtitle">Get 2 free hens to start your adventure</p>
+          <p className="subtitle">Register free and start your adventure!</p>
         </div>
 
         <div className="registration-benefits">
           <h3>What You Get:</h3>
           <ul>
-            <li>✅ 2 Free Hen NFTs (worth 0.02 ETH)</li>
-            <li>✅ Unique genetic traits for each hen</li>
-            <li>✅ Ready to breed, battle, and race</li>
-            <li>✅ Free gas for your first 2 mints</li>
+            <li>✅ Free account registration</li>
+            <li>✅ Access to all game features</li>
+            <li>✅ Get free Sepolia ETH from faucets</li>
+            <li>✅ Mint hens and start playing!</li>
           </ul>
         </div>
 

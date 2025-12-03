@@ -3,6 +3,7 @@ import { ethers } from 'ethers';
 import './App.css';
 import LandingPage from './components/LandingPage';
 import Registration from './components/Registration';
+import FaucetGuide from './components/FaucetGuide';
 import Marketplace from './components/Marketplace';
 import Breeding from './components/Breeding';
 import BattleArena from './components/BattleArena';
@@ -592,6 +593,9 @@ function App() {
             <button onClick={() => setSelectedTab('register')} className={`nav-btn ${selectedTab === 'register' ? 'active' : ''}`}>
               🎁 Register
             </button>
+            <button onClick={() => setSelectedTab('faucet')} className={`nav-btn ${selectedTab === 'faucet' ? 'active' : ''}`}>
+              🚰 Get Free ETH
+            </button>
             <button onClick={() => setSelectedTab('my-hens')} className={`nav-btn ${selectedTab === 'my-hens' ? 'active' : ''}`}>
               My Hens
             </button>
@@ -658,11 +662,12 @@ function App() {
             account={account}
             onRegistrationComplete={(data) => {
               console.log('Registration successful:', data);
-              setSelectedTab('my-hens');
-              loadMyHens(); // Refresh hens list
+              setSelectedTab('faucet'); // Redirect to faucet guide
             }}
           />
         )}
+
+        {selectedTab === 'faucet' && <FaucetGuide />}
 
         {selectedTab === 'home' && (
           <div className="home-section">
@@ -671,10 +676,13 @@ function App() {
               <p>Own, breed, battle, and race unique NFT hens on the blockchain</p>
               <div className="hero-actions">
                 <button onClick={() => setSelectedTab('register')} className="btn btn-success">
-                  🎁 Get 2 Free Hens - Register Now!
+                  🎁 Register Free & Get Started!
+                </button>
+                <button onClick={() => setSelectedTab('faucet')} className="btn btn-success">
+                  🚰 Get Free Test ETH
                 </button>
                 <button onClick={mintHen} disabled={loading || !account} className="btn btn-primary">
-                  {loading ? 'Minting...' : 'Or Mint Hen (0.01 ETH)'}
+                  {loading ? 'Minting...' : 'Mint Your First Hen (0.01 ETH)'}
                 </button>
               </div>
             </div>
