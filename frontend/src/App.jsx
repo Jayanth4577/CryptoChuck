@@ -172,9 +172,14 @@ function App() {
 
     try {
       // Clear disconnect flag when user manually connects
-      localStorage.removeItem('walletDisconnected');
+      if (!silentReconnect) {
+        localStorage.removeItem('walletDisconnected');
+      }
       
-      setShowLanding(false); // Hide landing page when connecting
+      // Only hide landing page on manual connect, not on silent reconnect
+      if (!silentReconnect) {
+        setShowLanding(false);
+      }
       setError(''); // Clear any previous errors
       
       // Handle Brave Wallet and other provider conflicts
@@ -192,16 +197,11 @@ function App() {
       // Only request permissions on manual connect, not on auto-reconnect
       let accounts;
       if (!silentReconnect) {
-        // Manual connect - show permission dialog to allow account switching
-        try {
-          await ethereum.request({
-            method: 'wallet_requestPermissions',
-            params: [{ eth_accounts: {} }]
-          });
-        } catch (permError) {
-          // If user cancels permission request, fall back to regular request
-          console.log('Permission request cancelled, using existing connection');
-        }
+        // Manual connect - ALWAYS show permission dialog to allow account switching
+        await ethereum.request({
+          method: 'wallet_requestPermissions',
+          params: [{ eth_accounts: {} }]
+        });
         accounts = await ethereum.request({ method: 'eth_requestAccounts' });
       } else {
         // Silent reconnect - just get existing accounts
