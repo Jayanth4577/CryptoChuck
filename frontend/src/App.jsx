@@ -75,8 +75,8 @@ function App() {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const accounts = await provider.listAccounts();
       if (accounts.length > 0) {
-        // Silently connect without showing errors
-        await initWeb3();
+        // Silently connect without showing errors or permission dialogs
+        await initWeb3(true); // Pass true to indicate silent reconnect
       }
     } catch (error) {
       // Ignore errors on auto-connect, user can manually connect
@@ -110,20 +110,24 @@ function App() {
     }
 
     try {
+      console.log('Attempting to switch to Sepolia network...');
       // Try to switch to Sepolia network
       await window.ethereum.request({
         method: 'wallet_switchEthereumChain',
         params: [{ chainId: '0xaa36a7' }], // 11155111 in hex
       });
       
+      console.log('Network switch successful, reinitializing...');
       // After successful switch, reinitialize web3
       setTimeout(() => {
-        initWeb3();
+        window.location.reload();
       }, 500);
     } catch (switchError) {
+      console.error('Switch error:', switchError);
       // This error code indicates that the chain has not been added to MetaMask
       if (switchError.code === 4902) {
         try {
+          console.log('Sepolia not found, adding network...');
           await window.ethereum.request({
             method: 'wallet_addEthereumChain',
             params: [
@@ -141,14 +145,18 @@ function App() {
             ],
           });
           
-          // After adding, reinitialize web3
+          console.log('Network added successfully, reloading...');
+          // After adding, reload the page
           setTimeout(() => {
-            initWeb3();
+            window.location.reload();
           }, 500);
         } catch (addError) {
           console.error('Error adding Sepolia network:', addError);
           alert('Failed to add Sepolia network to MetaMask. Please add it manually.');
         }
+      } else if (switchError.code === 4001) {
+        // User rejected the request
+        console.log('User rejected network switch');
       } else {
         console.error('Error switching to Sepolia network:', switchError);
         alert('Failed to switch to Sepolia network. Please switch manually in MetaMask.');
@@ -156,7 +164,7 @@ function App() {
     }
   };
 
-  const initWeb3 = async () => {
+  const initWeb3 = async (silentReconnect = false) => {
     if (typeof window.ethereum === 'undefined') {
       setError('❌ Please install MetaMask to use this app!');
       return;
@@ -181,48 +189,73 @@ function App() {
         }
       }
       
-      // Request account access - this forces MetaMask to show account selector
-      // Using wallet_requestPermissions ensures user can choose different account
-      try {
-        await ethereum.request({
-          method: 'wallet_requestPermissions',
-          params: [{ eth_accounts: {} }]
-        });
-      } catch (permError) {
-        // If user cancels permission request, fall back to regular request
-        console.log('Permission request cancelled, using existing connection');
+      // Only request permissions on manual connect, not on auto-reconnect
+      let accounts;
+      if (!silentReconnect) {
+        // Manual connect - show permission dialog to allow account switching
+        try {
+          await ethereum.request({
+            method: 'wallet_requestPermissions',
+            params: [{ eth_accounts: {} }]
+          });
+        } catch (permError) {
+          // If user cancels permission request, fall back to regular request
+          console.log('Permission request cancelled, using existing connection');
+        }
+        accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+      } else {
+        // Silent reconnect - just get existing accounts
+        accounts = await ethereum.request({ method: 'eth_accounts' });
+        if (accounts.length === 0) {
+          // No accounts available, do nothing
+          return;
+        }
       }
-      
-      const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
       const provider = new ethers.BrowserProvider(ethereum);
       const signer = await provider.getSigner();
+      
+      // Check network chainId FIRST
+      const network = await provider.getNetwork();
+      const chainId = Number(network.chainId);
+      
+      console.log('Connected to network:', chainId);
+      
+      // Check if connected to Sepolia (chainId: 11155111)
+      if (chainId !== 11155111) {
+        console.error(`Wrong network. Expected Sepolia (11155111), got ${chainId}`);
+        setWrongNetwork(true);
+        setProvider(provider);
+        setSigner(signer);
+        setAccount(accounts[0]);
+        return;
+      }
       
       setProvider(provider);
       setSigner(signer);
       setAccount(accounts[0]);
 
-        // Verify contract addresses exist on the connected network
-        if (!CONTRACT_ADDRESSES.henNFT) {
-          console.error('HenNFT contract address is not set');
-          alert('HenNFT contract address is missing. Check src/config/contracts.js');
-          return;
-        }
+      // Verify contract addresses exist on the connected network
+      if (!CONTRACT_ADDRESSES.henNFT) {
+        console.error('HenNFT contract address is not set');
+        alert('HenNFT contract address is missing. Check src/config/contracts.js');
+        return;
+      }
 
-        // Check that the contract is deployed on the currently selected network/provider
-        try {
-          const code = await provider.getCode(CONTRACT_ADDRESSES.henNFT);
-          if (!code || code === '0x') {
-            console.error(`No contract deployed at ${CONTRACT_ADDRESSES.henNFT} on the current network`);
-            setWrongNetwork(true);
-            return;
-          } else {
-            setWrongNetwork(false);
-          }
-        } catch (err) {
-          console.error('Error while checking contract code:', err);
+      // Check that the contract is deployed on the currently selected network/provider
+      try {
+        const code = await provider.getCode(CONTRACT_ADDRESSES.henNFT);
+        if (!code || code === '0x') {
+          console.error(`No contract deployed at ${CONTRACT_ADDRESSES.henNFT} on Sepolia network`);
           setWrongNetwork(true);
           return;
+        } else {
+          setWrongNetwork(false);
         }
+      } catch (err) {
+        console.error('Error while checking contract code:', err);
+        setWrongNetwork(true);
+        return;
+      }
 
         // Initialize contracts
         const henNFT = new ethers.Contract(CONTRACT_ADDRESSES.henNFT, HenNFTABI, signer);
