@@ -103,6 +103,59 @@ function App() {
     console.log('Wallet disconnected');
   };
 
+  const switchToSepoliaNetwork = async () => {
+    if (typeof window.ethereum === 'undefined') {
+      alert('MetaMask is not installed!');
+      return;
+    }
+
+    try {
+      // Try to switch to Sepolia network
+      await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: '0xaa36a7' }], // 11155111 in hex
+      });
+      
+      // After successful switch, reinitialize web3
+      setTimeout(() => {
+        initWeb3();
+      }, 500);
+    } catch (switchError) {
+      // This error code indicates that the chain has not been added to MetaMask
+      if (switchError.code === 4902) {
+        try {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [
+              {
+                chainId: '0xaa36a7', // 11155111 in hex
+                chainName: 'Sepolia Testnet',
+                rpcUrls: ['https://rpc.sepolia.org'],
+                nativeCurrency: {
+                  name: 'Sepolia ETH',
+                  symbol: 'ETH',
+                  decimals: 18,
+                },
+                blockExplorerUrls: ['https://sepolia.etherscan.io'],
+              },
+            ],
+          });
+          
+          // After adding, reinitialize web3
+          setTimeout(() => {
+            initWeb3();
+          }, 500);
+        } catch (addError) {
+          console.error('Error adding Sepolia network:', addError);
+          alert('Failed to add Sepolia network to MetaMask. Please add it manually.');
+        }
+      } else {
+        console.error('Error switching to Sepolia network:', switchError);
+        alert('Failed to switch to Sepolia network. Please switch manually in MetaMask.');
+      }
+    }
+  };
+
   const initWeb3 = async () => {
     if (typeof window.ethereum === 'undefined') {
       setError('❌ Please install MetaMask to use this app!');
@@ -183,6 +236,12 @@ function App() {
       // Listen for account changes
       window.ethereum.on('accountsChanged', (accounts) => {
         setAccount(accounts[0]);
+      });
+      
+      // Listen for network changes
+      window.ethereum.on('chainChanged', () => {
+        // Reload the page when network changes
+        window.location.reload();
       });
     } catch (error) {
       console.error('Error connecting to Web3:', error);
@@ -662,10 +721,16 @@ function App() {
       {wrongNetwork && account && (
         <div className="network-warning">
           <h3>⚠️ Wrong Network</h3>
-          <p>Please switch MetaMask to Sepolia Testnet:</p>
-          <p><strong>Network:</strong> Sepolia Testnet</p>
-          <p><strong>Chain ID:</strong> 11155111</p>
-          <p><strong>RPC URL:</strong> https://sepolia.infura.io/v3/</p>
+          <p>Your contracts are deployed on Sepolia Testnet.</p>
+          <p>Please switch your MetaMask network to continue.</p>
+          <div className="network-details">
+            <p><strong>Network:</strong> Sepolia Testnet</p>
+            <p><strong>Chain ID:</strong> 11155111</p>
+            <p><strong>RPC URL:</strong> https://rpc.sepolia.org</p>
+          </div>
+          <button onClick={switchToSepoliaNetwork} className="btn btn-primary" style={{ marginTop: '15px' }}>
+            🔄 Switch to Sepolia Network
+          </button>
         </div>
       )}
 
