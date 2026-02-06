@@ -38,13 +38,8 @@ function App() {
   const [selectedTab, setSelectedTab] = useState('home');
   const [loading, setLoading] = useState(false);
   const [wrongNetwork, setWrongNetwork] = useState(false);
-  // Don't show landing page if wallet was previously connected (unless manually disconnected)
-  const [showLanding, setShowLanding] = useState(() => {
-    const wasDisconnected = localStorage.getItem('walletDisconnected');
-    const hasConnection = window.ethereum?.selectedAddress;
-    // Show landing only if no connection OR user manually disconnected
-    return !hasConnection || wasDisconnected === 'true';
-  });
+  const [showLanding, setShowLanding] = useState(true);
+  const [isReconnecting, setIsReconnecting] = useState(false);
   const [error, setError] = useState('');
   const [txModal, setTxModal] = useState({
     isOpen: false,
@@ -59,13 +54,29 @@ function App() {
   const [searchId, setSearchId] = useState('');
   const [filterGeneration, setFilterGeneration] = useState('all'); // 'all', '0', '1', '2+', etc.
 
-  // Initialize Web3
+  // Initialize Web3 - auto-reconnect on page load
   useEffect(() => {
-    // Check if user previously connected AND didn't manually disconnect
     const wasDisconnected = localStorage.getItem('walletDisconnected');
-    if (window.ethereum && window.ethereum.selectedAddress && !wasDisconnected) {
-      // Only auto-connect if already connected and user didn't disconnect
-      checkExistingConnection();
+    if (window.ethereum && !wasDisconnected) {
+      setIsReconnecting(true);
+      silentConnect();
+    }
+    
+    // Listen for account and network changes
+    if (window.ethereum) {
+      window.ethereum.on('accountsChanged', (accs) => {
+        if (accs.length === 0) {
+          // User disconnected from MetaMask
+          setAccount('');
+          setContracts({});
+        } else {
+          // Account changed - reload to reinitialize
+          window.location.reload();
+        }
+      });
+      window.ethereum.on('chainChanged', () => {
+        window.location.reload();
+      });
     }
   }, []);
 
@@ -76,24 +87,64 @@ function App() {
     }
   }, [account, contracts]);
 
-  const checkExistingConnection = async () => {
+  const silentConnect = async () => {
     try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const accounts = await provider.listAccounts();
-      if (accounts.length > 0) {
-        // Silently connect without showing errors or permission dialogs
-        setShowLanding(false); // Hide landing page when auto-connecting
-        await initWeb3(true); // Pass true to indicate silent reconnect
+      let ethereum = window.ethereum;
+      if (ethereum.providers?.length) {
+        ethereum = ethereum.providers.find((p) => p.isMetaMask) || ethereum;
       }
-    } catch (error) {
-      // Ignore errors on auto-connect, user can manually connect
-      console.log('No existing connection found');
-      setShowLanding(true); // Show landing page if no connection
+      
+      // Only get already-authorized accounts (no popup)
+      const accounts = await ethereum.request({ method: 'eth_accounts' });
+      if (accounts.length > 0) {
+        const provider = new ethers.BrowserProvider(ethereum);
+        const signer = await provider.getSigner();
+        const network = await provider.getNetwork();
+        const chainId = Number(network.chainId);
+        
+        if (chainId !== 11155111) {
+          setWrongNetwork(true);
+          setAccount(accounts[0]);
+          setProvider(provider);
+          setSigner(signer);
+          setShowLanding(false);
+          setIsReconnecting(false);
+          return;
+        }
+        
+        // Check contract exists
+        const code = await provider.getCode(CONTRACT_ADDRESSES.henNFT);
+        if (!code || code === '0x') {
+          setWrongNetwork(true);
+          setAccount(accounts[0]);
+          setProvider(provider);
+          setSigner(signer);
+          setShowLanding(false);
+          setIsReconnecting(false);
+          return;
+        }
+        
+        // All good - initialize contracts
+        const henNFT = new ethers.Contract(CONTRACT_ADDRESSES.henNFT, HenNFTABI, signer);
+        const henBreeding = new ethers.Contract(CONTRACT_ADDRESSES.henBreeding, HenBreedingABI, signer);
+        const henBattle = new ethers.Contract(CONTRACT_ADDRESSES.henBattle, HenBattleABI, signer);
+        const henRacing = new ethers.Contract(CONTRACT_ADDRESSES.henRacing, HenRacingABI, signer);
+        const bettingSystem = new ethers.Contract(CONTRACT_ADDRESSES.bettingSystem, BettingSystemABI, signer);
+        
+        setProvider(provider);
+        setSigner(signer);
+        setAccount(accounts[0]);
+        setContracts({ henNFT, henBreeding, henBattle, henRacing, bettingSystem });
+        setWrongNetwork(false);
+        setShowLanding(false);
+      }
+    } catch (err) {
+      console.log('Silent reconnect failed:', err);
     }
+    setIsReconnecting(false);
   };
 
   const disconnectWallet = () => {
-    // Clear all state
     setAccount('');
     setProvider(null);
     setSigner(null);
@@ -101,14 +152,8 @@ function App() {
     setMyHens([]);
     setWrongNetwork(false);
     setError('');
-    // DON'T set showLanding to true - stay on current page after disconnect
-    
-    // Store disconnect state to prevent auto-reconnect on refresh
+    // Stay on current page - don't change selectedTab or showLanding
     localStorage.setItem('walletDisconnected', 'true');
-    
-    // Note: MetaMask doesn't have a programmatic disconnect,
-    // but clearing state effectively disconnects the app
-    console.log('Wallet disconnected - staying on current page');
   };
 
   const switchToSepoliaNetwork = async () => {
@@ -172,137 +217,67 @@ function App() {
     }
   };
 
-  const initWeb3 = async (silentReconnect = false) => {
+  const initWeb3 = async () => {
     if (typeof window.ethereum === 'undefined') {
       setError('❌ Please install MetaMask to use this app!');
       return;
     }
 
     try {
-      // Clear disconnect flag when user manually connects
-      if (!silentReconnect) {
-        localStorage.removeItem('walletDisconnected');
-      }
+      localStorage.removeItem('walletDisconnected');
+      setShowLanding(false);
+      setError('');
       
-      // Only hide landing page on manual connect, not on silent reconnect
-      if (!silentReconnect) {
-        setShowLanding(false);
-      }
-      setError(''); // Clear any previous errors
-      
-      // Handle Brave Wallet and other provider conflicts
       let ethereum = window.ethereum;
-      
-      // If multiple providers exist (like Brave Wallet + MetaMask)
       if (ethereum.providers?.length) {
-        ethereum = ethereum.providers.find((provider) => provider.isMetaMask);
-        if (!ethereum) {
-          alert('Please set MetaMask as your default wallet in Brave settings!');
-          return;
-        }
+        ethereum = ethereum.providers.find((p) => p.isMetaMask) || ethereum;
       }
       
-      // Only request permissions on manual connect, not on auto-reconnect
-      let accounts;
-      if (!silentReconnect) {
-        // Manual connect - ALWAYS show permission dialog to allow account switching
-        try {
-          console.log('Requesting wallet permissions for account selection...');
-          // Request permissions to force account selection dialog
-          await ethereum.request({
-            method: 'wallet_requestPermissions',
-            params: [{ eth_accounts: {} }]
-          });
-          // Get accounts after permission granted
-          accounts = await ethereum.request({ method: 'eth_requestAccounts' });
-          console.log('Connected to account:', accounts[0]);
-        } catch (permError) {
-          // If user cancels or there's an error, exit gracefully
-          if (permError.code === 4001) {
-            console.log('User rejected the connection request');
-          } else {
-            console.error('Permission request error:', permError);
-          }
-          // Don't show landing page, just exit - stay on current page
-          return;
-        }
-      } else {
-        // Silent reconnect - just get existing accounts
-        accounts = await ethereum.request({ method: 'eth_accounts' });
-        if (accounts.length === 0) {
-          // No accounts available, do nothing
-          return;
-        }
-      }
+      // ALWAYS show account selection popup on manual connect
+      await ethereum.request({
+        method: 'wallet_requestPermissions',
+        params: [{ eth_accounts: {} }]
+      });
+      const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+      
       const provider = new ethers.BrowserProvider(ethereum);
       const signer = await provider.getSigner();
-      
-      // Check network chainId FIRST
       const network = await provider.getNetwork();
       const chainId = Number(network.chainId);
       
-      console.log('Connected to network:', chainId);
-      
-      // Check if connected to Sepolia (chainId: 11155111)
       if (chainId !== 11155111) {
-        console.error(`Wrong network. Expected Sepolia (11155111), got ${chainId}`);
         setWrongNetwork(true);
         setProvider(provider);
         setSigner(signer);
         setAccount(accounts[0]);
         return;
       }
-      
+
+      const code = await provider.getCode(CONTRACT_ADDRESSES.henNFT);
+      if (!code || code === '0x') {
+        setWrongNetwork(true);
+        setAccount(accounts[0]);
+        return;
+      }
+
+      const henNFT = new ethers.Contract(CONTRACT_ADDRESSES.henNFT, HenNFTABI, signer);
+      const henBreeding = new ethers.Contract(CONTRACT_ADDRESSES.henBreeding, HenBreedingABI, signer);
+      const henBattle = new ethers.Contract(CONTRACT_ADDRESSES.henBattle, HenBattleABI, signer);
+      const henRacing = new ethers.Contract(CONTRACT_ADDRESSES.henRacing, HenRacingABI, signer);
+      const bettingSystem = new ethers.Contract(CONTRACT_ADDRESSES.bettingSystem, BettingSystemABI, signer);
+
       setProvider(provider);
       setSigner(signer);
       setAccount(accounts[0]);
-
-      // Verify contract addresses exist on the connected network
-      if (!CONTRACT_ADDRESSES.henNFT) {
-        console.error('HenNFT contract address is not set');
-        alert('HenNFT contract address is missing. Check src/config/contracts.js');
-        return;
-      }
-
-      // Check that the contract is deployed on the currently selected network/provider
-      try {
-        const code = await provider.getCode(CONTRACT_ADDRESSES.henNFT);
-        if (!code || code === '0x') {
-          console.error(`No contract deployed at ${CONTRACT_ADDRESSES.henNFT} on Sepolia network`);
-          setWrongNetwork(true);
-          return;
-        } else {
-          setWrongNetwork(false);
-        }
-      } catch (err) {
-        console.error('Error while checking contract code:', err);
-        setWrongNetwork(true);
-        return;
-      }
-
-        // Initialize contracts
-        const henNFT = new ethers.Contract(CONTRACT_ADDRESSES.henNFT, HenNFTABI, signer);
-        const henBreeding = new ethers.Contract(CONTRACT_ADDRESSES.henBreeding, HenBreedingABI, signer);
-        const henBattle = new ethers.Contract(CONTRACT_ADDRESSES.henBattle, HenBattleABI, signer);
-        const henRacing = new ethers.Contract(CONTRACT_ADDRESSES.henRacing, HenRacingABI, signer);
-        const bettingSystem = new ethers.Contract(CONTRACT_ADDRESSES.bettingSystem, BettingSystemABI, signer);
-
-        setContracts({ henNFT, henBreeding, henBattle, henRacing, bettingSystem });
-
-      // Listen for account changes
-      window.ethereum.on('accountsChanged', (accounts) => {
-        setAccount(accounts[0]);
-      });
-      
-      // Listen for network changes
-      window.ethereum.on('chainChanged', () => {
-        // Reload the page when network changes
-        window.location.reload();
-      });
+      setContracts({ henNFT, henBreeding, henBattle, henRacing, bettingSystem });
+      setWrongNetwork(false);
     } catch (error) {
-      console.error('Error connecting to Web3:', error);
-      const errorMessage = parseError(error);
-      setError(errorMessage);
+      if (error.code === 4001) {
+        console.log('User rejected connection');
+      } else {
+        console.error('Error connecting:', error);
+        setError(parseError(error));
+      }
     }
   };
 
@@ -696,8 +671,8 @@ function App() {
     );
   };
 
-  // Show landing page if not connected
-  if (!account && showLanding) {
+  // Show landing page only on first visit (not after disconnect or during reconnect)
+  if (!account && showLanding && !isReconnecting) {
     return <LandingPage onConnect={initWeb3} />;
   }
 
@@ -761,7 +736,7 @@ function App() {
                 </button>
               </div>
             ) : (
-              <button className="wallet-btn" onClick={initWeb3}>Connect Wallet</button>
+              <button className="wallet-btn" onClick={() => initWeb3()}>Connect Wallet</button>
             )}
           </div>
         </div>
