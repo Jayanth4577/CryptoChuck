@@ -101,14 +101,14 @@ function App() {
     setMyHens([]);
     setWrongNetwork(false);
     setError('');
-    setShowLanding(true);
+    // DON'T set showLanding to true - stay on current page after disconnect
     
     // Store disconnect state to prevent auto-reconnect on refresh
     localStorage.setItem('walletDisconnected', 'true');
     
     // Note: MetaMask doesn't have a programmatic disconnect,
     // but clearing state effectively disconnects the app
-    console.log('Wallet disconnected');
+    console.log('Wallet disconnected - staying on current page');
   };
 
   const switchToSepoliaNetwork = async () => {
@@ -207,11 +207,15 @@ function App() {
       if (!silentReconnect) {
         // Manual connect - ALWAYS show permission dialog to allow account switching
         try {
+          console.log('Requesting wallet permissions for account selection...');
+          // Request permissions to force account selection dialog
           await ethereum.request({
             method: 'wallet_requestPermissions',
             params: [{ eth_accounts: {} }]
           });
+          // Get accounts after permission granted
           accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+          console.log('Connected to account:', accounts[0]);
         } catch (permError) {
           // If user cancels or there's an error, exit gracefully
           if (permError.code === 4001) {
@@ -219,7 +223,7 @@ function App() {
           } else {
             console.error('Permission request error:', permError);
           }
-          setShowLanding(true); // Show landing page again
+          // Don't show landing page, just exit - stay on current page
           return;
         }
       } else {
@@ -831,6 +835,16 @@ function App() {
 
         {selectedTab === 'my-hens' && (
           <div className="my-hens-section">
+            {!account ? (
+              <div className="empty-state">
+                <h3>🦊 Wallet Not Connected</h3>
+                <p>Please connect your wallet to view your NFT collection.</p>
+                <button onClick={() => initWeb3(false)} className="btn btn-primary">
+                  🔗 Connect Wallet
+                </button>
+              </div>
+            ) : (
+              <>
             <div className="nft-collection-header">
               <div className="collection-info">
                 <h2>🎨 My NFT Collection</h2>
@@ -914,6 +928,8 @@ function App() {
                 <div className="hens-grid">
                   {getFilteredAndSortedHens().map(renderHenCard)}
                 </div>
+              </>
+            )}
               </>
             )}
           </div>
