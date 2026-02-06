@@ -38,7 +38,13 @@ function App() {
   const [selectedTab, setSelectedTab] = useState('home');
   const [loading, setLoading] = useState(false);
   const [wrongNetwork, setWrongNetwork] = useState(false);
-  const [showLanding, setShowLanding] = useState(true);
+  // Don't show landing page if wallet was previously connected (unless manually disconnected)
+  const [showLanding, setShowLanding] = useState(() => {
+    const wasDisconnected = localStorage.getItem('walletDisconnected');
+    const hasConnection = window.ethereum?.selectedAddress;
+    // Show landing only if no connection OR user manually disconnected
+    return !hasConnection || wasDisconnected === 'true';
+  });
   const [error, setError] = useState('');
   const [txModal, setTxModal] = useState({
     isOpen: false,
@@ -76,11 +82,13 @@ function App() {
       const accounts = await provider.listAccounts();
       if (accounts.length > 0) {
         // Silently connect without showing errors or permission dialogs
+        setShowLanding(false); // Hide landing page when auto-connecting
         await initWeb3(true); // Pass true to indicate silent reconnect
       }
     } catch (error) {
       // Ignore errors on auto-connect, user can manually connect
       console.log('No existing connection found');
+      setShowLanding(true); // Show landing page if no connection
     }
   };
 
@@ -198,11 +206,22 @@ function App() {
       let accounts;
       if (!silentReconnect) {
         // Manual connect - ALWAYS show permission dialog to allow account switching
-        await ethereum.request({
-          method: 'wallet_requestPermissions',
-          params: [{ eth_accounts: {} }]
-        });
-        accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+        try {
+          await ethereum.request({
+            method: 'wallet_requestPermissions',
+            params: [{ eth_accounts: {} }]
+          });
+          accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+        } catch (permError) {
+          // If user cancels or there's an error, exit gracefully
+          if (permError.code === 4001) {
+            console.log('User rejected the connection request');
+          } else {
+            console.error('Permission request error:', permError);
+          }
+          setShowLanding(true); // Show landing page again
+          return;
+        }
       } else {
         // Silent reconnect - just get existing accounts
         accounts = await ethereum.request({ method: 'eth_accounts' });
