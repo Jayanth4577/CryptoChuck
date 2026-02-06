@@ -10,7 +10,8 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true
+    sourcemap: true,
+    chunkSizeWarningLimit: 1000, // Increase limit to 1000kb to suppress warning
   },
   resolve: {
     alias: {
