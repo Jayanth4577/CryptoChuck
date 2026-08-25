@@ -335,7 +335,7 @@ npm run deploy:local
 1. **Import to Vercel**
    - Go to [vercel.com/new](https://vercel.com/new)
    - Import: `Jayanth4577/CryptoChuck`
-   - **Root Directory**: `frontend` ⚠️ CRITICAL
+   - **Root Directory**: `frontend` 
    - Framework: Vite
 
 2. **Environment Variables**
@@ -356,7 +356,7 @@ npm run deploy:local
 1. **Import to Vercel**
    - Go to [vercel.com/new](https://vercel.com/new)
    - Import: `Jayanth4577/CryptoChuck`
-   - **Root Directory**: `backend` ⚠️ CRITICAL
+   - **Root Directory**: `backend` 
    - Framework: Other
 
 2. **Environment Variables**
