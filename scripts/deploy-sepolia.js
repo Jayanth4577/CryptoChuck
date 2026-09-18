@@ -124,7 +124,7 @@ export const CONTRACT_ADDRESSES = {
 export const NETWORK_CONFIG = {
   chainId: 11155111,
   name: 'Sepolia Testnet',
-  rpcUrl: 'https://sepolia.infura.io/v3/56c857ab8ed5406b86d247e317ff7672',
+  rpcUrl: process.env.INFURA_API_KEY ? `https://sepolia.infura.io/v3/${process.env.INFURA_API_KEY}` : 'https://rpc.sepolia.org',
   blockExplorer: 'https://sepolia.etherscan.io',
   nativeCurrency: {
     name: 'Sepolia ETH',

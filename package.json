@@ -2,6 +2,7 @@
   "name": "cryptohens",
   "version": "0.1.0",
   "description": "NFT hen fighting game",
+  "license": "MIT",
   "scripts": {
     "compile": "hardhat compile",
     "test": "hardhat test",

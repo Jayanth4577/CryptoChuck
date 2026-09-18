@@ -26,7 +26,7 @@ module.exports = {
     },
     sepolia: {
       url: INFURA_API_KEY ? `https://sepolia.infura.io/v3/${INFURA_API_KEY}` : "https://rpc.sepolia.org",
-      accounts: PRIVATE_KEY ? [PRIVATE_KEY] : [],
+      accounts: (PRIVATE_KEY && /^0x[0-9a-fA-F]{64}$/.test(PRIVATE_KEY)) ? [PRIVATE_KEY] : [],
       chainId: 11155111,
       gas: "auto",
       gasPrice: "auto"

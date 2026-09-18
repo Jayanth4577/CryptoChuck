@@ -2,6 +2,7 @@
   "name": "cryptochuck-backend",
   "version": "1.0.0",
   "description": "Backend API for CryptoChuck NFT Game",
+  "license": "MIT",
   "main": "server.js",
   "type": "module",
   "scripts": {

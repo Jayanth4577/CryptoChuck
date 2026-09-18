@@ -4,8 +4,9 @@ package-lock.json
 
 # Environment
 .env
-.env.local
-.env.production
+.env.*
+*.env
+!.env.example
 
 # Vercel
 .vercel

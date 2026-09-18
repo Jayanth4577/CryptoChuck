@@ -204,7 +204,7 @@ export default function LandingPage({ onConnect }) {
                   <strong>Network Name:</strong> Sepolia Testnet
                 </div>
                 <div className="config-item">
-                  <strong>RPC URL:</strong> https://sepolia.infura.io/v3/56c857ab8ed5406b86d247e317ff7672
+                  <strong>RPC URL:</strong> https://rpc.sepolia.org
                 </div>
                 <div className="config-item">
                   <strong>Chain ID:</strong> 11155111
